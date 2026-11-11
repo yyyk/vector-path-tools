@@ -4,13 +4,27 @@ import { readFileSync } from 'node:fs';
 import { arcTo, bounds } from '../dist/index.js';
 import { arcToBezier } from '../dist/svg-arc-to-cubic-bezier/arc-to-bezier.js';
 
-test('svg-arc-to-cubic-bezier: bit-identical to the original (fixtures/svg-arc.json)', () => {
-	const cases = JSON.parse(
-		readFileSync(new URL('./fixtures/svg-arc.json', import.meta.url), 'utf8'),
-	);
-	// Through JSON, as the fixture was written (JSON has no -0).
-	for (const c of cases)
-		assert.deepEqual(JSON.parse(JSON.stringify(arcToBezier(c.arc))), c.out);
+test('svg-arc-to-cubic-bezier: the same results as the original (fixtures/svg-arc.json)', () => {
+    // The fixture is the original run on macOS (Apple Silicon), where the port
+    // matches it bit for bit. Math.sin, cos, tan and acos differ in the last bit
+    // between platforms (on Linux x86-64 CI, by up to about 1e-14 relative), so
+    // this compares within 1e-13.
+    const cases = JSON.parse(
+        readFileSync(new URL('./fixtures/svg-arc.json', import.meta.url), 'utf8'),
+    );
+    for (const c of cases) {
+        const out = arcToBezier(c.arc);
+        assert.equal(out.length, c.out.length);
+        out.forEach((curve, i) => {
+            for (const k of ['x1', 'y1', 'x2', 'y2', 'x', 'y']) {
+                const r = c.out[i][k];
+                assert.ok(
+                    Math.abs(curve[k] - r) <= 1e-13 * Math.max(1, Math.abs(r)),
+                    `${curve[k]} vs ${r}`,
+                );
+            }
+        });
+    }
 });
 
 test('a half circle: two quarter-circle cubics through the top', () => {
