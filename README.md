@@ -47,13 +47,13 @@ type PathCommand =
 	| { type: 'lineTo'; x: number; y: number }
 	| { type: 'quadTo'; cx: number; cy: number; x: number; y: number }
 	| {
-			type: 'cubicTo';
-			c1x: number;
-			c1y: number;
-			c2x: number;
-			c2y: number;
-			x: number;
-			y: number;
+		type: 'cubicTo';
+		c1x: number;
+		c1y: number;
+		c2x: number;
+		c2y: number;
+		x: number;
+		y: number;
 	  }
 	| { type: 'close' };
 ```
