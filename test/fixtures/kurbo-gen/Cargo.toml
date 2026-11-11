@@ -1,0 +1,15 @@
+# Generates ../kurbo.json: kurbo's flatten and CubicBez::to_quads on random
+# curves, the reference the ports in src/kurbo/flatten.ts and
+# src/kurbo/to-quads.ts must match bit for bit. Expects kurbo cloned next to vector-path-tools, at
+# commit a5f97ff4070773fe01be92c6a607120e49da4e6f.
+#   cargo run --release --manifest-path test/fixtures/kurbo-gen/Cargo.toml > test/fixtures/kurbo.json
+[package]
+name = "kurbo-gen"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+kurbo = { path = "../../../../kurbo/kurbo" }
+
+[workspace]

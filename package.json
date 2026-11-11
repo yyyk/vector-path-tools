@@ -1,0 +1,55 @@
+{
+  "name": "vector-path-tools",
+  "version": "0.1.0",
+  "description": "Geometry for vector paths (lines, quadratic and cubic Béziers): exact bounds, point containment, flattening to lines within a tolerance, and cubic-to-quadratic conversion. Pure TypeScript, no dependencies.",
+  "keywords": [
+    "path",
+    "vector",
+    "bezier",
+    "svg",
+    "bounds",
+    "bounding-box",
+    "flatten",
+    "quadratic",
+    "point-in-path",
+    "geometry"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yyyk/vector-path-tools.git"
+  },
+  "homepage": "https://yyyk.github.io/vector-path-tools/",
+  "bugs": "https://github.com/yyyk/vector-path-tools/issues",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "format": "prettier --write \"**/*.{ts,mjs,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,mjs,json,md}\"",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.0",
+    "typescript": "^5.5.0"
+  }
+}

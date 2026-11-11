@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>toQuadratics comparison · vector-path-tools</title>
+		<script type="module" src="/src/quadratics-compare.ts"></script>
+	</head>
+	<body>
+		<main>
+			<h1><code>toQuadratics</code> comparison</h1>
+			<p class="caption">
+				The same cubic, replaced by quadratics by each of <code>toQuadratics</code>'s
+				methods (the library's own code), all at the same tolerance. Drag the round
+				handles. Gray band: the cubic, drawn as wide as twice the tolerance, so the
+				quadratics should stay inside it. The quadratics alternate in color and join at
+				the dots. The marker shows where they are furthest from the cubic, measured both
+				ways by dense sampling.
+			</p>
+
+			<div class="controls" id="controls">
+				<label
+					>preset
+					<select id="preset">
+						<option value="s">S-curve</option>
+						<option value="worst">sharp at its start</option>
+						<option value="hook">hook (sharp at one end)</option>
+						<option value="arch">arch</option>
+						<option value="loop">loop</option>
+						<option value="fold">nearly folds back</option>
+					</select></label
+				>
+				<button id="random">random curve</button>
+				<label
+					>tolerance
+					<input id="tol" type="range" min="0.25" max="30" step="0.25" value="0.5" />
+					<output id="tolOut"></output
+				></label>
+				<label
+					><input type="checkbox" id="inflections" /> detectInflections (Colomitchi's
+					methods)</label
+				>
+			</div>
+
+			<div class="panels">
+				<div class="panel">
+					<h3>kurbo (to_quads)</h3>
+					<p id="kurboInfo"></p>
+					<canvas id="kurbo"></canvas>
+				</div>
+				<div class="panel">
+					<h3>fonttools (cu2qu)</h3>
+					<p id="fonttoolsInfo"></p>
+					<canvas id="fonttools"></canvas>
+				</div>
+				<div class="panel">
+					<h3>colomitchi-half</h3>
+					<p id="colomitchi-halfInfo"></p>
+					<canvas id="colomitchi-half"></canvas>
+				</div>
+				<div class="panel">
+					<h3>colomitchi-adaptive</h3>
+					<p id="colomitchi-adaptiveInfo"></p>
+					<canvas id="colomitchi-adaptive"></canvas>
+				</div>
+				<div class="panel">
+					<h3>colomitchi-symmetric</h3>
+					<p id="colomitchi-symmetricInfo"></p>
+					<canvas id="colomitchi-symmetric"></canvas>
+				</div>
+			</div>
+
+			<p class="caption">
+				<strong>kurbo</strong>: equal steps in t, each piece the mid-point quadratic.<br />
+				<strong>fonttools</strong>: one smooth (G1) quadratic spline; the joins don't
+				kink, at the cost of more pieces.<br />
+				<strong>colomitchi-half</strong>: halving until each piece's mid-point quadratic
+				is within the tolerance.<br />
+				<strong>colomitchi-adaptive</strong> and <strong>colomitchi-symmetric</strong>:
+				splitting where the error just reaches the tolerance, from the start, or from
+				both ends at once.
+			</p>
+			<footer>
+				<a href="https://github.com/yyyk/vector-path-tools">GitHub</a> · MIT License · ©
+				2026 yyyk
+			</footer>
+		</main>
+	</body>
+</html>

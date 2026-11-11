@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>vector-path-tools</title>
+		<meta
+			name="description"
+			content="Geometry for vector paths: exact bounds, flattening within a tolerance, cubic-to-quadratic conversion. Pure TypeScript."
+		/>
+		<script type="module" src="/src/overview.ts"></script>
+	</head>
+	<body>
+		<main>
+			<h1>vector-path-tools</h1>
+			<p class="lead">
+				Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
+				exact bounding boxes, hit testing, flattening curves into lines within a
+				tolerance, converting cubics to quadratics, and SVG arcs as cubics. Pure
+				TypeScript, no dependencies.
+			</p>
+			<pre><code class="language-sh">npm install vector-path-tools</code></pre>
+			<pre><code class="language-ts">import { arcTo, bounds, contains, flatten, toQuadratics } from 'vector-path-tools';
+
+const path = [
+  { type: 'moveTo', x: 0, y: 0 },
+  { type: 'cubicTo', c1x: 0, c1y: 100, c2x: 100, c2y: 100, x: 100, y: 0 },
+  { type: 'close' },
+];
+
+bounds(path); // { minX: 0, minY: 0, maxX: 100, maxY: 75 }: the curve, not its control points
+contains(path, 50, 70); // true: inside the fill
+flatten(path); // only moveTo / lineTo / close, every line within 0.25 of the curve
+toQuadratics(path, 0.1); // the cubic as quadratics within 0.1
+
+// an SVG arc as cubics, to put in a path
+const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, false, true, 100, 0)];</code></pre>
+			<p>
+				Every example below is live: drag the round points (filled: on the curve;
+				hollow: control points).
+			</p>
+
+			<h2>Paths</h2>
+			<p>A path is an array of commands in absolute coordinates:</p>
+			<pre><code class="language-ts">[
+  { type: 'moveTo', x: 0, y: 0 },
+  { type: 'lineTo', x: 100, y: 0 },
+  { type: 'quadTo', cx: 150, cy: 50, x: 100, y: 100 },
+  { type: 'cubicTo', c1x: 50, c1y: 150, c2x: 0, c2y: 50, x: 0, y: 100 },
+  { type: 'close' },
+]</code></pre>
+			<p>
+				There is no arc command: <a href="#arcTo"><code>arcTo</code></a> turns an SVG
+				arc into cubic commands to put in the path. Every function returns a new array
+				and leaves its input alone. Invalid input (a drawing command before any
+				<code>moveTo</code>, an unknown command, a NaN or infinite coordinate) is a
+				<code>TypeError</code>.
+			</p>
+
+			<h2><code>bounds(path)</code></h2>
+			<p>
+				The exact bounding box of what the path draws: curves count by their extremes,
+				not their control points. <code>null</code> for a path that draws nothing.
+			</p>
+			<div class="demo">
+				<canvas id="bounds"></canvas>
+				<p class="caption" id="bounds-info"></p>
+			</div>
+
+			<h2><code>flatten(path, tolerance?, options?)</code></h2>
+			<p>
+				Curves replaced by lines within <code>tolerance</code> of the curve (in path
+				units: on screen, about 0.25 px divided by the zoom; default 0.25). Two methods
+				choose where the lines go; the
+				<a href="flatten.html"><code>flatten</code> comparison</a> shows them side by
+				side.
+			</p>
+			<div class="demo">
+				<form class="controls" id="flatten-form">
+					<label
+						>curve
+						<select name="curve">
+							<option value="cubic">cubic</option>
+							<option value="quad">quadratic</option>
+						</select></label
+					>
+					<label
+						>method
+						<select name="method">
+							<option>uniform</option>
+							<option>adaptive</option>
+						</select></label
+					>
+					<label
+						>tolerance
+						<input
+							type="range"
+							name="tolerance"
+							min="0.25"
+							max="20"
+							step="0.25"
+							value="0.25" /><output for="tolerance"></output
+					></label>
+				</form>
+				<canvas id="flatten"></canvas>
+				<p class="caption" id="flatten-info"></p>
+			</div>
+			<table>
+				<tr>
+					<th>Method</th>
+					<th>How</th>
+					<th>Within the tolerance</th>
+					<th>Lines on cubics</th>
+					<th>Time</th>
+				</tr>
+				<tr>
+					<td><code>'uniform'</code> (default)</td>
+					<td>Equal steps per curve, as many as Wang's formula needs (Skia)</td>
+					<td>Proven</td>
+					<td>100%</td>
+					<td>1×</td>
+				</tr>
+				<tr>
+					<td><code>'adaptive'</code></td>
+					<td>
+						Lines spaced by how much the curve bends: kurbo's flatten (Raph Levien's
+						method)
+					</td>
+					<td>Not guaranteed (up to 2.6× on cubics)</td>
+					<td>52–54%</td>
+					<td>1.3–1.9×</td>
+				</tr>
+			</table>
+			<p class="caption">
+				Measured on random cubics. kurbo spreads one line count over a cubic's
+				quadratics, so on cubics <code>'adaptive'</code> can go past the tolerance; on
+				quadratics it stays within about 6%.
+			</p>
+
+			<h2><code>toQuadratics(path, tolerance?, options?)</code></h2>
+			<p>
+				Cubics replaced by quadratics within <code>tolerance</code>: kurbo's
+				<code>to_quads</code> (default), fontTools' cu2qu (a smooth spline), or one of
+				Adrian Colomitchi's three methods (from his bezier-utils, with three bugs
+				fixed), optionally split at inflection points first. <code>tolerance</code>
+				defaults to 1 for fontTools (0.001 em at 1000 units per em) and 0.5 for
+				Colomitchi's methods (0.5 px at the least), and is required for kurbo, which
+				suggests no value.
+			</p>
+			<div class="demo">
+				<form class="controls" id="quad-form">
+					<label
+						>method
+						<select name="method">
+							<option>kurbo</option>
+							<option>fonttools</option>
+							<option>colomitchi-half</option>
+							<option>colomitchi-adaptive</option>
+							<option>colomitchi-symmetric</option>
+						</select></label
+					>
+					<label
+						><input type="checkbox" name="inflections" /> detectInflections</label
+					>
+					<label
+						>tolerance
+						<input
+							type="range"
+							name="tolerance"
+							min="0.25"
+							max="40"
+							step="0.25"
+							value="0.5" /><output for="tolerance"></output
+					></label>
+				</form>
+				<canvas id="quad"></canvas>
+				<p class="caption" id="quad-info"></p>
+			</div>
+
+			<h2><code>contains(path, x, y, options?)</code></h2>
+			<p>
+				Whether a point is inside the path's fill: Skia's
+				<code>SkPath::contains</code> (default) or fontTools'
+				<code>PointInsidePen</code>. The fill rule decides how nested subpaths combine:
+				under <code>'nonzero'</code>, a hole must wind the other way; under
+				<code>'evenodd'</code>, every nested loop is a hole.
+			</p>
+			<div class="demo">
+				<form class="controls" id="contains-form">
+					<label
+						>method
+						<select name="method">
+							<option>skia</option>
+							<option>fonttools</option>
+						</select></label
+					>
+					<label
+						>fillRule
+						<select name="rule">
+							<option>nonzero</option>
+							<option>evenodd</option>
+						</select></label
+					>
+					<label
+						>inner loop
+						<select name="inner">
+							<option value="opposite">wound the other way</option>
+							<option value="same">wound the same way</option>
+						</select></label
+					>
+				</form>
+				<canvas id="contains"></canvas>
+				<p class="caption" id="contains-info"></p>
+			</div>
+
+			<h2 id="arcTo">
+				<code>arcTo(x0, y0, rx, ry, xAxisRotation, largeArc, sweep, x, y)</code>
+			</h2>
+			<p>
+				An SVG elliptical arc (the <code>A</code> command) from (x0, y0) to (x, y) as
+				path commands: cubics, ported from svg-arc-to-cubic-bezier. As the SVG spec
+				says, identical end points give no commands and a zero radius gives a
+				<code>lineTo</code>.
+			</p>
+			<pre><code class="language-ts">const path = [
+  { type: 'moveTo', x: 0, y: 0 },
+  ...arcTo(0, 0, 50, 50, 0, false, true, 100, 0), // a half circle
+];</code></pre>
+
+			<h2>References</h2>
+			<p>
+				What each part is ported from or based on, at the versions the ports follow.
+				Licenses: see
+				<a
+					href="https://github.com/yyyk/vector-path-tools/blob/main/THIRD_PARTY_NOTICES"
+					>THIRD_PARTY_NOTICES</a
+				>.
+			</p>
+			<ul>
+				<li>
+					<a href="https://skia.org">Skia</a> (BSD-3-Clause), commit
+					<code>50ba8e6</code>: Wang's formula (<a
+						href="https://github.com/google/skia/blob/50ba8e6d82572c55b146d8c802fe1fc14d47ca1c/src/gpu/tessellate/WangsFormula.h"
+						><code>WangsFormula.h</code></a
+					>,
+					<a
+						href="https://github.com/google/skia/blob/50ba8e6d82572c55b146d8c802fe1fc14d47ca1c/src/gpu/tessellate/Tessellation.h"
+						><code>Tessellation.h</code></a
+					>), the curve evaluation of its tessellation shader (<a
+						href="https://github.com/google/skia/blob/50ba8e6d82572c55b146d8c802fe1fc14d47ca1c/src/gpu/ganesh/tessellate/GrPathTessellationShader.cpp"
+						><code>GrPathTessellationShader.cpp</code></a
+					>,
+					<a
+						href="https://github.com/google/skia/blob/50ba8e6d82572c55b146d8c802fe1fc14d47ca1c/src/gpu/tessellate/PatchWriter.h"
+						><code>PatchWriter.h</code></a
+					>), and <code>SkPath::contains</code> (<a
+						href="https://github.com/google/skia/blob/50ba8e6d82572c55b146d8c802fe1fc14d47ca1c/src/core/SkPathPriv.cpp"
+						><code>SkPathPriv.cpp</code></a
+					>,
+					<a
+						href="https://github.com/google/skia/blob/50ba8e6d82572c55b146d8c802fe1fc14d47ca1c/src/core/SkPathPriv.h"
+						><code>SkPathPriv.h</code></a
+					>,
+					<a
+						href="https://github.com/google/skia/blob/50ba8e6d82572c55b146d8c802fe1fc14d47ca1c/src/core/SkGeometry.cpp"
+						><code>SkGeometry.cpp</code></a
+					>,
+					<a
+						href="https://github.com/google/skia/blob/50ba8e6d82572c55b146d8c802fe1fc14d47ca1c/src/core/SkCubicClipper.cpp"
+						><code>SkCubicClipper.cpp</code></a
+					>,
+					<a
+						href="https://github.com/google/skia/blob/50ba8e6d82572c55b146d8c802fe1fc14d47ca1c/include/core/SkScalar.h"
+						><code>SkScalar.h</code></a
+					>).
+				</li>
+				<li>
+					<a href="https://github.com/linebender/kurbo">kurbo</a> (MIT), commit
+					<code>a5f97ff</code>: <code>flatten</code> and
+					<code>CubicBez::to_quads</code> (<a
+						href="https://github.com/linebender/kurbo/blob/a5f97ff4070773fe01be92c6a607120e49da4e6f/kurbo/src/bezpath.rs"
+						><code>bezpath.rs</code></a
+					>,
+					<a
+						href="https://github.com/linebender/kurbo/blob/a5f97ff4070773fe01be92c6a607120e49da4e6f/kurbo/src/quadbez.rs"
+						><code>quadbez.rs</code></a
+					>,
+					<a
+						href="https://github.com/linebender/kurbo/blob/a5f97ff4070773fe01be92c6a607120e49da4e6f/kurbo/src/cubicbez.rs"
+						><code>cubicbez.rs</code></a
+					>).
+				</li>
+				<li>
+					<a href="https://github.com/fonttools/fonttools">fontTools</a>, commit
+					<code>1ff10da</code>: cu2qu (Apache-2.0;
+					<a
+						href="https://github.com/fonttools/fonttools/blob/1ff10daa33d4e40af00a76cda7fa804af4200b30/Lib/fontTools/cu2qu/cu2qu.py"
+						><code>cu2qu.py</code></a
+					>,
+					<a
+						href="https://github.com/fonttools/fonttools/blob/1ff10daa33d4e40af00a76cda7fa804af4200b30/Lib/fontTools/cu2qu/errors.py"
+						><code>errors.py</code></a
+					>) and <code>PointInsidePen</code> (MIT;
+					<a
+						href="https://github.com/fonttools/fonttools/blob/1ff10daa33d4e40af00a76cda7fa804af4200b30/Lib/fontTools/pens/pointInsidePen.py"
+						><code>pointInsidePen.py</code></a
+					>,
+					<a
+						href="https://github.com/fonttools/fonttools/blob/1ff10daa33d4e40af00a76cda7fa804af4200b30/Lib/fontTools/pens/basePen.py"
+						><code>basePen.py</code></a
+					>,
+					<a
+						href="https://github.com/fonttools/fonttools/blob/1ff10daa33d4e40af00a76cda7fa804af4200b30/Lib/fontTools/misc/bezierTools.py"
+						><code>bezierTools.py</code></a
+					>).
+				</li>
+				<li>
+					Adrian Colomitchi (<a
+						href="https://web.archive.org/web/20141217004852/http://caffeineowl.com/"
+						>caffeineowl.com</a
+					>): bezier-utils (MIT, <code>bezier-utils-src.jar</code>) and the articles
+					<a
+						href="https://web.archive.org/web/20150403003715/http://www.caffeineowl.com/graphics/2d/vectorial/cubic2quad01.html"
+						>"Approximating cubic Bezier curves by quadratic ones"</a
+					>
+					(2006) and
+					<a
+						href="https://web.archive.org/web/20150425075200/http://www.caffeineowl.com/graphics/2d/vectorial/cubic-inflexion.html"
+						>"Inflection points of a cubic Bezier"</a
+					>
+					(2004) (archived copies).
+				</li>
+				<li>
+					<a href="https://github.com/colinmeinke/svg-arc-to-cubic-bezier"
+						>svg-arc-to-cubic-bezier</a
+					>
+					(ISC), commit <code>f02ab11</code>:
+					<a
+						href="https://github.com/colinmeinke/svg-arc-to-cubic-bezier/blob/f02ab118609817ee562c69aea98579ecd3eb810e/src/index.js"
+						><code>index.js</code></a
+					>, for <code>arcTo</code>.
+				</li>
+			</ul>
+
+			<h2>More</h2>
+			<ul>
+				<li>
+					<a href="flatten.html"><code>flatten</code> comparison</a>: the two methods
+					on the same curve, with measured errors.
+				</li>
+				<li>
+					<a href="quadratics.html"><code>toQuadratics</code> comparison</a>: the five
+					methods on the same cubic, with measured errors.
+				</li>
+				<li>
+					<a href="https://github.com/yyyk/vector-path-tools#readme">README</a> for
+					the full API.
+				</li>
+			</ul>
+			<footer>
+				<a href="https://github.com/yyyk/vector-path-tools">GitHub</a> · MIT License · ©
+				2026 yyyk
+			</footer>
+		</main>
+	</body>
+</html>

@@ -1,0 +1,235 @@
+:root {
+	color-scheme: light dark;
+	--bg: #ffffff;
+	--fg: #1f2328;
+	--muted: #59636e;
+	--border: #d1d9e0;
+	--soft: #f6f8fa;
+	--accent: #0969da;
+	--input: #8c959f;
+	--handle: #1f2328;
+	--good: #1a7f37;
+	--bad: #d1242f;
+	--band: rgba(31, 35, 40, 0.12);
+	--kw: #cf222e;
+	--str: #0a3069;
+	--num: #0550ae;
+	--com: #59636e;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #0d1117;
+		--fg: #e6edf3;
+		--muted: #9198a1;
+		--border: #3d444d;
+		--soft: #151b23;
+		--accent: #4493f8;
+		--input: #6e7681;
+		--handle: #e6edf3;
+		--good: #3fb950;
+		--bad: #ff7b72;
+		--band: rgba(230, 237, 243, 0.12);
+		--kw: #ff7b72;
+		--str: #a5d6ff;
+		--num: #79c0ff;
+		--com: #9198a1;
+	}
+}
+* {
+	box-sizing: border-box;
+}
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font:
+		15px/1.6 system-ui,
+		-apple-system,
+		'Segoe UI',
+		sans-serif;
+}
+a {
+	color: var(--accent);
+}
+header.site {
+	border-bottom: 1px solid var(--border);
+}
+/* The header's contents line up with the page's: same width as <main>. */
+header.site > div {
+	display: flex;
+	gap: 1.4rem;
+	align-items: center;
+	max-width: 880px;
+	margin: 0 auto;
+	padding: 0.7rem 1.5rem;
+}
+header.site .brand {
+	font-weight: 700;
+	color: var(--fg);
+	text-decoration: none;
+}
+header.site nav a {
+	margin-right: 1rem;
+	color: var(--muted);
+	text-decoration: none;
+}
+header.site nav a.active {
+	color: var(--fg);
+	font-weight: 600;
+}
+/* The overview's reading width, and wide enough for two 400 px comparison
+   panels side by side. */
+main {
+	max-width: 880px;
+	margin: 0 auto;
+	padding: 1.5rem 1.5rem 4rem;
+}
+h1 {
+	margin: 0.4rem 0 0.3rem;
+}
+h2 {
+	margin-top: 2rem;
+	padding-bottom: 0.3rem;
+	border-bottom: 1px solid var(--border);
+}
+.lead {
+	color: var(--muted);
+	font-size: 1.1rem;
+}
+code {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 0.88em;
+	background: var(--soft);
+	padding: 0.1em 0.35em;
+	border-radius: 4px;
+}
+pre {
+	background: var(--soft);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 0.9rem 1rem;
+	overflow-x: auto;
+	line-height: 1.45;
+}
+pre code {
+	background: none;
+	padding: 0;
+}
+.tok-kw {
+	color: var(--kw);
+}
+.tok-str {
+	color: var(--str);
+}
+.tok-num {
+	color: var(--num);
+}
+.tok-com {
+	color: var(--com);
+	font-style: italic;
+}
+table {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 0.93rem;
+}
+th,
+td {
+	border: 1px solid var(--border);
+	padding: 0.4rem 0.6rem;
+	text-align: left;
+	vertical-align: top;
+}
+th {
+	background: var(--soft);
+}
+.demo {
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 1rem;
+	margin: 1rem 0;
+}
+.controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.2rem;
+	align-items: center;
+	margin-bottom: 0.7rem;
+	font-size: 0.92rem;
+}
+.controls label {
+	display: inline-flex;
+	gap: 0.4rem;
+	align-items: center;
+}
+.controls output {
+	min-width: 2.5em;
+	color: var(--muted);
+	font-variant-numeric: tabular-nums;
+}
+select,
+input,
+textarea,
+button {
+	font: inherit;
+	color: inherit;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 0.15rem 0.45rem;
+}
+textarea {
+	width: 100%;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 0.82rem;
+	line-height: 1.4;
+}
+canvas {
+	display: block;
+	max-width: 100%;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: var(--soft);
+	touch-action: none;
+}
+.caption,
+.stats {
+	color: var(--muted);
+	font-size: 0.88rem;
+	font-variant-numeric: tabular-nums;
+}
+.good {
+	color: var(--good);
+	font-weight: 600;
+}
+.bad {
+	color: var(--bad);
+	font-weight: 600;
+}
+.error {
+	color: var(--bad);
+}
+.columns {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 1rem;
+}
+.panels {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+.panel h3 {
+	margin: 0 0 0.2rem;
+	font-size: 1rem;
+}
+@media (max-width: 900px) {
+	.columns {
+		grid-template-columns: 1fr;
+	}
+}
+footer {
+	margin-top: 3rem;
+	color: var(--muted);
+	font-size: 0.85rem;
+}

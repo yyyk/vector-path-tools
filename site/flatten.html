@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>flatten comparison · vector-path-tools</title>
+		<script type="module" src="/src/flatten-compare.ts"></script>
+	</head>
+	<body>
+		<main>
+			<h1><code>flatten</code> comparison</h1>
+			<p class="caption">
+				The same curve, cut into straight lines by each of <code>flatten</code>'s
+				methods (the library's own code). Drag the round handles. Gray band: the curve,
+				drawn as wide as twice the tolerance, so the lines should stay inside it. Blue:
+				the lines. The marker shows where the lines are furthest from the curve,
+				measured by dense sampling.
+			</p>
+
+			<div class="controls" id="controls">
+				<label
+					>curve
+					<select id="kind">
+						<option value="cubic">cubic</option>
+						<option value="quad">quadratic</option>
+					</select></label
+				>
+				<label
+					>preset
+					<select id="preset">
+						<option value="worst">sharp at its start</option>
+						<option value="hook">hook (sharp at one end)</option>
+						<option value="s">S-curve</option>
+						<option value="arch">arch</option>
+						<option value="loop">loop</option>
+						<option value="fold">nearly folds back</option>
+					</select></label
+				>
+				<button id="random">random curve</button>
+				<label
+					>tolerance
+					<input id="tol" type="range" min="0.25" max="30" step="0.25" value="0.25" />
+					<output id="tolOut"></output
+				></label>
+			</div>
+
+			<div class="panels">
+				<div class="panel">
+					<h3>uniform (Wang's formula, Skia)</h3>
+					<p id="uniformInfo"></p>
+					<canvas id="uniform"></canvas>
+				</div>
+				<div class="panel">
+					<h3>adaptive (kurbo)</h3>
+					<p id="adaptiveInfo"></p>
+					<canvas id="adaptive"></canvas>
+				</div>
+			</div>
+
+			<p class="caption">
+				<strong>uniform</strong>: equal steps along the curve, as many as its sharpest
+				bend needs (Wang's formula, as in Skia). A proven bound, so it never exceeds the
+				tolerance, but curves that are sharp in one place and flat elsewhere get more
+				lines than needed.<br />
+				<strong>adaptive</strong>: kurbo's flatten (Raph Levien's method). Lines spaced
+				by how much the curve bends: dense where it bends, sparse where it's flat.
+				Cubics are first approximated by quadratics, and one line count is spread over
+				them, so on cubics it can go past the tolerance (measured up to 2.6×); on
+				quadratics it stays within about 6%.
+			</p>
+			<footer>
+				<a href="https://github.com/yyyk/vector-path-tools">GitHub</a> · MIT License · ©
+				2026 yyyk
+			</footer>
+		</main>
+	</body>
+</html>
