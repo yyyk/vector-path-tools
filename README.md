@@ -20,9 +20,9 @@ npm install vector-path-tools
 import { arcTo, bounds, contains, flatten, toQuadratics } from 'vector-path-tools';
 
 const path = [
-  { type: 'moveTo', x: 0, y: 0 },
-  { type: 'cubicTo', c1x: 0, c1y: 100, c2x: 100, c2y: 100, x: 100, y: 0 },
-  { type: 'close' },
+	{ type: 'moveTo', x: 0, y: 0 },
+	{ type: 'cubicTo', c1x: 0, c1y: 100, c2x: 100, c2y: 100, x: 100, y: 0 },
+	{ type: 'close' },
 ];
 
 bounds(path); // { minX: 0, minY: 0, maxX: 100, maxY: 75 }: the curve, not its control points
@@ -32,8 +32,8 @@ toQuadratics(path, 0.1); // the cubic as quadratics within 0.1
 
 // an SVG arc as cubics, to put in a path
 const halfCircle = [
-  { type: 'moveTo', x: 0, y: 0 },
-  ...arcTo(0, 0, 50, 50, 0, false, true, 100, 0),
+	{ type: 'moveTo', x: 0, y: 0 },
+	...arcTo(0, 0, 50, 50, 0, false, true, 100, 0),
 ];
 ```
 
@@ -43,19 +43,19 @@ A path is an array (or any iterable) of commands in absolute coordinates:
 
 ```ts
 type PathCommand =
-  | { type: 'moveTo'; x: number; y: number }
-  | { type: 'lineTo'; x: number; y: number }
-  | { type: 'quadTo'; cx: number; cy: number; x: number; y: number }
-  | {
-      type: 'cubicTo';
-      c1x: number;
-      c1y: number;
-      c2x: number;
-      c2y: number;
-      x: number;
-      y: number;
-    }
-  | { type: 'close' };
+	| { type: 'moveTo'; x: number; y: number }
+	| { type: 'lineTo'; x: number; y: number }
+	| { type: 'quadTo'; cx: number; cy: number; x: number; y: number }
+	| {
+			type: 'cubicTo';
+			c1x: number;
+			c1y: number;
+			c2x: number;
+			c2y: number;
+			x: number;
+			y: number;
+	  }
+	| { type: 'close' };
 ```
 
 There is no arc command: `arcTo` turns an SVG arc into cubic commands to put in
@@ -84,26 +84,26 @@ Glyph outlines are paths too. For example, with opentype.js, whose commands use
 
 ```ts
 function fromOpenType(c) {
-  switch (c.type) {
-    case 'M':
-      return { type: 'moveTo', x: c.x, y: c.y };
-    case 'L':
-      return { type: 'lineTo', x: c.x, y: c.y };
-    case 'Q':
-      return { type: 'quadTo', cx: c.x1, cy: c.y1, x: c.x, y: c.y };
-    case 'C':
-      return {
-        type: 'cubicTo',
-        c1x: c.x1,
-        c1y: c.y1,
-        c2x: c.x2,
-        c2y: c.y2,
-        x: c.x,
-        y: c.y,
-      };
-    default:
-      return { type: 'close' };
-  }
+	switch (c.type) {
+		case 'M':
+			return { type: 'moveTo', x: c.x, y: c.y };
+		case 'L':
+			return { type: 'lineTo', x: c.x, y: c.y };
+		case 'Q':
+			return { type: 'quadTo', cx: c.x1, cy: c.y1, x: c.x, y: c.y };
+		case 'C':
+			return {
+				type: 'cubicTo',
+				c1x: c.x1,
+				c1y: c.y1,
+				c2x: c.x2,
+				c2y: c.y2,
+				x: c.x,
+				y: c.y,
+			};
+		default:
+			return { type: 'close' };
+	}
 }
 
 const commands = glyph.getPath(0, 0, 72).commands.map(fromOpenType);
@@ -185,8 +185,8 @@ identical end points give no commands and a zero radius gives a `lineTo`.
 
 ```ts
 const path = [
-  { type: 'moveTo', x: 0, y: 0 },
-  ...arcTo(0, 0, 50, 50, 0, false, true, 100, 0), // a half circle
+	{ type: 'moveTo', x: 0, y: 0 },
+	...arcTo(0, 0, 50, 50, 0, false, true, 100, 0), // a half circle
 ];
 ```
 
