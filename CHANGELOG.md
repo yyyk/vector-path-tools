@@ -18,12 +18,12 @@ First release.
   fontTools' `PointInsidePen`.
 - `flatten(path, tolerance?, options?)`: curves replaced by lines within
   `tolerance` (default 0.25), with two methods:
-    - `'uniform'` (default): equal steps per curve, as many as Wang's formula
-      needs, with points evaluated as in Skia's tessellation shader. A proven
-      bound; the fastest.
-    - `'adaptive'`: kurbo's `flatten` (Raph Levien's method), lines spaced by how
-      much the curve bends. About half the lines on cubics; not guaranteed to
-      stay within the tolerance on cubics.
+  - `'uniform'` (default): equal steps per curve, as many as Wang's formula
+    needs, with points evaluated as in Skia's tessellation shader. A proven
+    bound; the fastest.
+  - `'adaptive'`: kurbo's `flatten` (Raph Levien's method), lines spaced by how
+    much the curve bends. About half the lines on cubics; not guaranteed to
+    stay within the tolerance on cubics.
 - `toQuadratics(path, tolerance?, options?)`: cubics replaced by quadratics within
   `tolerance` (default 1 for fontTools, 0.5 for Colomitchi's methods, required
   for kurbo), by kurbo's `to_quads` (default), fontTools' cu2qu, or one of
