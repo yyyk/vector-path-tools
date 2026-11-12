@@ -57,6 +57,66 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 				<code>TypeError</code>.
 			</p>
 
+			<h2><code>curvePoint(curve, t)</code> and <code>curveTangent(curve, t)</code></h2>
+			<p>
+				One curve's point at its parameter <code>t</code>, and its derivative there: the
+				direction it runs, with its speed as the length. Equal steps in
+				<code>t</code> aren't equal distances along the curve; for those, use
+				<code>measure</code>.
+			</p>
+			<div class="demo">
+				<form class="controls" id="curve-form">
+					<label
+						>t
+						<input
+							type="range"
+							name="t"
+							min="0"
+							max="1"
+							step="0.005"
+							value="0.3" /><output for="t"></output
+					></label>
+				</form>
+				<canvas id="curve"></canvas>
+				<p class="caption" id="curve-info"></p>
+			</div>
+
+			<h2>
+				<code>measure(path, options?)</code> and <code>pointsAlong(path, spacing)</code>
+			</h2>
+			<p>
+				A path's length, and points with their direction at a distance or a fraction of
+				it, accurate to 1e-10 of each curve's length at any scale. Subpaths continue one
+				into the next, as in SVG. <code>pointsAlong</code> spaces points evenly along
+				each subpath, as p5's <code>textToPoints</code> does for glyphs.
+			</p>
+			<div class="demo">
+				<form class="controls" id="measure-form">
+					<label
+						>fraction
+						<input
+							type="range"
+							name="fraction"
+							min="0"
+							max="1"
+							step="0.005"
+							value="0.3" /><output for="fraction"></output
+					></label>
+					<label
+						>spacing
+						<input
+							type="range"
+							name="spacing"
+							min="4"
+							max="80"
+							step="1"
+							value="20" /><output for="spacing"></output
+					></label>
+				</form>
+				<canvas id="measure"></canvas>
+				<p class="caption" id="measure-info"></p>
+			</div>
+
 			<h2><code>bounds(path)</code></h2>
 			<p>
 				The exact bounding box of what the path draws: curves count by their extremes,
@@ -65,6 +125,82 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 			<div class="demo">
 				<canvas id="bounds"></canvas>
 				<p class="caption" id="bounds-info"></p>
+			</div>
+
+			<h2><code>contains(path, x, y, options?)</code></h2>
+			<p>
+				Whether a point is inside the path's fill: Skia's
+				<code>SkPath::contains</code> (default) or fontTools'
+				<code>PointInsidePen</code>. The fill rule decides how nested subpaths combine:
+				under <code>'nonzero'</code>, a hole must wind the other way; under
+				<code>'evenodd'</code>, every nested loop is a hole.
+			</p>
+			<div class="demo">
+				<form class="controls" id="contains-form">
+					<label
+						>method
+						<select name="method">
+							<option>skia</option>
+							<option>fonttools</option>
+						</select></label
+					>
+					<label
+						>fillRule
+						<select name="rule">
+							<option>nonzero</option>
+							<option>evenodd</option>
+						</select></label
+					>
+					<label
+						>inner loop
+						<select name="inner">
+							<option value="opposite">wound the other way</option>
+							<option value="same">wound the same way</option>
+						</select></label
+					>
+				</form>
+				<canvas id="contains"></canvas>
+				<p class="caption" id="contains-info"></p>
+			</div>
+
+			<h2><code>toQuadratics(path, tolerance?, options?)</code></h2>
+			<p>
+				Cubics replaced by quadratics within <code>tolerance</code>: kurbo's
+				<code>to_quads</code> (default), fontTools' cu2qu (a smooth spline), or one of
+				Adrian Colomitchi's three methods (from his bezier-utils, with three bugs
+				fixed), optionally split at inflection points first. <code>tolerance</code>
+				defaults to 1 for fontTools (0.001 em at 1000 units per em) and 0.5 for
+				Colomitchi's methods (0.5 px at the least), and is required for kurbo, which
+				suggests no value.
+			</p>
+			<div class="demo">
+				<form class="controls" id="quad-form">
+					<label
+						>method
+						<select name="method">
+							<option>kurbo</option>
+							<option>fonttools</option>
+							<option>colomitchi-half</option>
+							<option>colomitchi-adaptive</option>
+							<option>colomitchi-symmetric</option>
+						</select></label
+					>
+					<label
+						><input type="checkbox" name="inflections" /> detectInflections</label
+					>
+					<label
+						>tolerance
+						<input
+							type="range"
+							name="tolerance"
+							min="0.25"
+							max="40"
+							step="0.25"
+							value="0.5" /><output for="tolerance"></output
+					></label>
+				</form>
+				<canvas id="quad"></canvas>
+				<p class="caption" id="quad-info"></p>
 			</div>
 
 			<h2><code>flatten(path, tolerance?, options?)</code></h2>
@@ -136,142 +272,6 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 				quadratics, so on cubics <code>'adaptive'</code> can go past the tolerance; on
 				quadratics it stays within about 6%.
 			</p>
-
-			<h2><code>toQuadratics(path, tolerance?, options?)</code></h2>
-			<p>
-				Cubics replaced by quadratics within <code>tolerance</code>: kurbo's
-				<code>to_quads</code> (default), fontTools' cu2qu (a smooth spline), or one of
-				Adrian Colomitchi's three methods (from his bezier-utils, with three bugs
-				fixed), optionally split at inflection points first. <code>tolerance</code>
-				defaults to 1 for fontTools (0.001 em at 1000 units per em) and 0.5 for
-				Colomitchi's methods (0.5 px at the least), and is required for kurbo, which
-				suggests no value.
-			</p>
-			<div class="demo">
-				<form class="controls" id="quad-form">
-					<label
-						>method
-						<select name="method">
-							<option>kurbo</option>
-							<option>fonttools</option>
-							<option>colomitchi-half</option>
-							<option>colomitchi-adaptive</option>
-							<option>colomitchi-symmetric</option>
-						</select></label
-					>
-					<label
-						><input type="checkbox" name="inflections" /> detectInflections</label
-					>
-					<label
-						>tolerance
-						<input
-							type="range"
-							name="tolerance"
-							min="0.25"
-							max="40"
-							step="0.25"
-							value="0.5" /><output for="tolerance"></output
-					></label>
-				</form>
-				<canvas id="quad"></canvas>
-				<p class="caption" id="quad-info"></p>
-			</div>
-
-			<h2><code>contains(path, x, y, options?)</code></h2>
-			<p>
-				Whether a point is inside the path's fill: Skia's
-				<code>SkPath::contains</code> (default) or fontTools'
-				<code>PointInsidePen</code>. The fill rule decides how nested subpaths combine:
-				under <code>'nonzero'</code>, a hole must wind the other way; under
-				<code>'evenodd'</code>, every nested loop is a hole.
-			</p>
-			<div class="demo">
-				<form class="controls" id="contains-form">
-					<label
-						>method
-						<select name="method">
-							<option>skia</option>
-							<option>fonttools</option>
-						</select></label
-					>
-					<label
-						>fillRule
-						<select name="rule">
-							<option>nonzero</option>
-							<option>evenodd</option>
-						</select></label
-					>
-					<label
-						>inner loop
-						<select name="inner">
-							<option value="opposite">wound the other way</option>
-							<option value="same">wound the same way</option>
-						</select></label
-					>
-				</form>
-				<canvas id="contains"></canvas>
-				<p class="caption" id="contains-info"></p>
-			</div>
-
-			<h2>
-				<code>measure(path, options?)</code> and <code>pointsAlong(path, spacing)</code>
-			</h2>
-			<p>
-				A path's length, and points with their direction at a distance or a fraction of
-				it, accurate to 1e-10 of each curve's length at any scale. Subpaths continue one
-				into the next, as in SVG. <code>pointsAlong</code> spaces points evenly along
-				each subpath, as p5's <code>textToPoints</code> does for glyphs.
-			</p>
-			<div class="demo">
-				<form class="controls" id="measure-form">
-					<label
-						>fraction
-						<input
-							type="range"
-							name="fraction"
-							min="0"
-							max="1"
-							step="0.005"
-							value="0.3" /><output for="fraction"></output
-					></label>
-					<label
-						>spacing
-						<input
-							type="range"
-							name="spacing"
-							min="4"
-							max="80"
-							step="1"
-							value="20" /><output for="spacing"></output
-					></label>
-				</form>
-				<canvas id="measure"></canvas>
-				<p class="caption" id="measure-info"></p>
-			</div>
-
-			<h2><code>curvePoint(curve, t)</code> and <code>curveTangent(curve, t)</code></h2>
-			<p>
-				One curve's point at its parameter <code>t</code>, and its derivative there: the
-				direction it runs, with its speed as the length. Equal steps in
-				<code>t</code> aren't equal distances along the curve; for those, use
-				<code>measure</code>.
-			</p>
-			<div class="demo">
-				<form class="controls" id="curve-form">
-					<label
-						>t
-						<input
-							type="range"
-							name="t"
-							min="0"
-							max="1"
-							step="0.005"
-							value="0.3" /><output for="t"></output
-					></label>
-				</form>
-				<canvas id="curve"></canvas>
-				<p class="caption" id="curve-info"></p>
-			</div>
 
 			<h2 id="arcTo">
 				<code>arcTo(x0, y0, rx, ry, xAxisRotation, largeArc, sweep, x, y)</code>
