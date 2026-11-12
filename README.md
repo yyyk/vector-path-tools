@@ -113,83 +113,27 @@ bounds(commands);
 
 ## API
 
-### `bounds(path)`
+### `segments(path)`
 
-The exact bounding box of what the path draws, `{ minX, minY, maxX, maxY }`, or
-`null` if it draws nothing. Curves count by their extremes, not their control
-points, and a `moveTo` with nothing drawn after it adds nothing.
+The drawn pieces of a path as `{ type: 'line' | 'quad' | 'cubic', p0, p1, ... }`,
+with each one's start point made explicit and `close` turned into its closing
+line. For writing your own geometry on top.
 
-### `contains(path, x, y, options?)`
+### `curvePoint(curve, t)` and `curveTangent(curve, t)`
 
-Whether the point is inside the path's fill, exactly for curves too.
-`options.fillRule` is `'nonzero'` (default) or `'evenodd'`, and decides how
-overlapping and nested subpaths combine (holes, for example). `options.method`:
-
-- `'skia'` (default): Skia's `SkPath::contains`. Every subpath counts as
-  closed, as canvas and SVG fill them.
-- `'fonttools'`: fontTools' `PointInsidePen`. Every subpath counts as closed.
-
-Points exactly on the boundary: `'skia'` counts them as inside, as canvas's
-`isPointInPath` does, which suits hit testing. `'fonttools'` counts some edges
-in and the opposite ones out, so when shapes share an edge, each point on it
-belongs to exactly one of them. `'skia'` also counts points within 1/4096 of
-the curve (in path units) as on it, which shows at very small coordinate
-scales; `'fonttools'` has no such tolerance.
-
-### `flatten(path, tolerance?, options?)`
-
-The path with every curve replaced by lines within `tolerance` of the curve
-(for `'adaptive'`, see the table). `tolerance` is in path units: for drawing on
-screen, about 0.25 pixels divided by the zoom. It defaults to 0.25, as both
-originals suggest (Skia: 1/4 pixel; kurbo: 0.25 for antialiased rendering).
-`moveTo`, `lineTo` and `close` are kept, and every curve's end point is kept
-exactly.
-
-`options.method` chooses where the lines go:
-
-| Method                | How                                                                                                           | Within the tolerance                           | Lines on cubics | Time     |
-| --------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------- | -------- |
-| `'uniform'` (default) | Equal steps along each curve, as many as Wang's formula needs (Skia's `WangsFormula`)                         | Proven                                         | 100%            | 1×       |
-| `'adaptive'`          | Lines spaced by how much the curve bends: kurbo's `flatten` (Raph Levien's method; cubics through quadratics) | Not guaranteed (measured up to 2.6× on cubics) | 52–54%          | 1.3–1.9× |
-
-Measured on random cubics. `'uniform'` uses the segment count of Skia's stroke
-tessellation and evaluates its points the way Skia's tessellation shader does.
-kurbo spreads one line count over a cubic's quadratics, so on cubics
-`'adaptive'` can go past the tolerance ("not absolutely guaranteed", in kurbo's
-words); on quadratics it stays within about 6%.
-
-### `toQuadratics(path, tolerance?, options?)`
-
-The path with every cubic replaced by quadratics within `tolerance`. Lines and
-quadratics are kept as they are. `options.method`:
-
-- `'kurbo'` (default): kurbo's `CubicBez::to_quads`.
-- `'fonttools'`: fontTools' cu2qu `curve_to_quadratic`, a smooth quadratic
-  spline. Throws `ApproxNotFoundError` when 100 quadratics aren't enough.
-- `'colomitchi-half'`, `'colomitchi-adaptive'`, `'colomitchi-symmetric'`:
-  Adrian Colomitchi's half-splitting, simple adaptive division and symmetric
-  adaptive division, ported from his bezier-utils Java code with three bugs fixed
-  to match his article (see the notes in `src/caffeineowl/bezier-utils.ts`); the simple
-  adaptive division is written from the article. `options.detectInflections`
-  (default false) divides each cubic at its inflection points first.
-
-`tolerance` defaults to what each original suggests: 1 for `'fonttools'` (0.001
-em at 1000 units per em) and 0.5 for Colomitchi's methods (0.5 px at the least).
-kurbo suggests no value, so it is required for `'kurbo'`.
-
-### `arcTo(x0, y0, rx, ry, xAxisRotation, largeArc, sweep, x, y)`
-
-An SVG elliptical arc (the `A` command) from (x0, y0) to (x, y) as path
-commands, cubics from svg-arc-to-cubic-bezier, so paths with arcs can use
-every function here. `xAxisRotation` is in degrees. As the SVG spec says,
-identical end points give no commands and a zero radius gives a `lineTo`.
+The point on one curve at its parameter `t` (0…1, clamped), and the curve's
+derivative there: the direction it runs, with its speed as the length
+(`Math.atan2(y, x)` is the angle). A `curve` is a segment from `segments()`, or
+its control points: two for a line, three for a quadratic, four for a cubic.
 
 ```ts
-const path = [
-  { type: 'moveTo', x: 0, y: 0 },
-  ...arcTo(0, 0, 50, 50, 0, false, true, 100, 0), // a half circle
-];
+curvePoint([p0, p1, p2, p3], 0.5); // { x, y }
+curveTangent(segments(path)[0], 0); // { x, y }
 ```
+
+They use the same evaluation as `measure`. Note that `t` is the curve's own
+parameter, not a fraction of its length; equal steps in `t` aren't equal
+distances along it (use `measure` for that).
 
 ### `measure(path, options?)`
 
@@ -219,27 +163,83 @@ array per subpath, as p5's `textToPoints` does for glyphs. Each subpath's
 spacing is adjusted slightly so its points are even and reach its end; a
 closed subpath doesn't repeat its start.
 
-### `curvePoint(curve, t)` and `curveTangent(curve, t)`
+### `bounds(path)`
 
-The point on one curve at its parameter `t` (0…1, clamped), and the curve's
-derivative there: the direction it runs, with its speed as the length
-(`Math.atan2(y, x)` is the angle). A `curve` is a segment from `segments()`, or
-its control points: two for a line, three for a quadratic, four for a cubic.
+The exact bounding box of what the path draws, `{ minX, minY, maxX, maxY }`, or
+`null` if it draws nothing. Curves count by their extremes, not their control
+points, and a `moveTo` with nothing drawn after it adds nothing.
+
+### `contains(path, x, y, options?)`
+
+Whether the point is inside the path's fill, exactly for curves too.
+`options.fillRule` is `'nonzero'` (default) or `'evenodd'`, and decides how
+overlapping and nested subpaths combine (holes, for example). `options.method`:
+
+- `'skia'` (default): Skia's `SkPath::contains`. Every subpath counts as
+  closed, as canvas and SVG fill them.
+- `'fonttools'`: fontTools' `PointInsidePen`. Every subpath counts as closed.
+
+Points exactly on the boundary: `'skia'` counts them as inside, as canvas's
+`isPointInPath` does, which suits hit testing. `'fonttools'` counts some edges
+in and the opposite ones out, so when shapes share an edge, each point on it
+belongs to exactly one of them. `'skia'` also counts points within 1/4096 of
+the curve (in path units) as on it, which shows at very small coordinate
+scales; `'fonttools'` has no such tolerance.
+
+### `toQuadratics(path, tolerance?, options?)`
+
+The path with every cubic replaced by quadratics within `tolerance`. Lines and
+quadratics are kept as they are. `options.method`:
+
+- `'kurbo'` (default): kurbo's `CubicBez::to_quads`.
+- `'fonttools'`: fontTools' cu2qu `curve_to_quadratic`, a smooth quadratic
+  spline. Throws `ApproxNotFoundError` when 100 quadratics aren't enough.
+- `'colomitchi-half'`, `'colomitchi-adaptive'`, `'colomitchi-symmetric'`:
+  Adrian Colomitchi's half-splitting, simple adaptive division and symmetric
+  adaptive division, ported from his bezier-utils Java code with three bugs fixed
+  to match his article (see the notes in `src/caffeineowl/bezier-utils.ts`); the simple
+  adaptive division is written from the article. `options.detectInflections`
+  (default false) divides each cubic at its inflection points first.
+
+`tolerance` defaults to what each original suggests: 1 for `'fonttools'` (0.001
+em at 1000 units per em) and 0.5 for Colomitchi's methods (0.5 px at the least).
+kurbo suggests no value, so it is required for `'kurbo'`.
+
+### `flatten(path, tolerance?, options?)`
+
+The path with every curve replaced by lines within `tolerance` of the curve
+(for `'adaptive'`, see the table). `tolerance` is in path units: for drawing on
+screen, about 0.25 pixels divided by the zoom. It defaults to 0.25, as both
+originals suggest (Skia: 1/4 pixel; kurbo: 0.25 for antialiased rendering).
+`moveTo`, `lineTo` and `close` are kept, and every curve's end point is kept
+exactly.
+
+`options.method` chooses where the lines go:
+
+| Method                | How                                                                                                           | Within the tolerance                           | Lines on cubics | Time     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------- | -------- |
+| `'uniform'` (default) | Equal steps along each curve, as many as Wang's formula needs (Skia's `WangsFormula`)                         | Proven                                         | 100%            | 1×       |
+| `'adaptive'`          | Lines spaced by how much the curve bends: kurbo's `flatten` (Raph Levien's method; cubics through quadratics) | Not guaranteed (measured up to 2.6× on cubics) | 52–54%          | 1.3–1.9× |
+
+Measured on random cubics. `'uniform'` uses the segment count of Skia's stroke
+tessellation and evaluates its points the way Skia's tessellation shader does.
+kurbo spreads one line count over a cubic's quadratics, so on cubics
+`'adaptive'` can go past the tolerance ("not absolutely guaranteed", in kurbo's
+words); on quadratics it stays within about 6%.
+
+### `arcTo(x0, y0, rx, ry, xAxisRotation, largeArc, sweep, x, y)`
+
+An SVG elliptical arc (the `A` command) from (x0, y0) to (x, y) as path
+commands, cubics from svg-arc-to-cubic-bezier, so paths with arcs can use
+every function here. `xAxisRotation` is in degrees. As the SVG spec says,
+identical end points give no commands and a zero radius gives a `lineTo`.
 
 ```ts
-curvePoint([p0, p1, p2, p3], 0.5); // { x, y }
-curveTangent(segments(path)[0], 0); // { x, y }
+const path = [
+  { type: 'moveTo', x: 0, y: 0 },
+  ...arcTo(0, 0, 50, 50, 0, false, true, 100, 0), // a half circle
+];
 ```
-
-They use the same evaluation as `measure`. Note that `t` is the curve's own
-parameter, not a fraction of its length; equal steps in `t` aren't equal
-distances along it (use `measure` for that).
-
-### `segments(path)`
-
-The drawn pieces of a path as `{ type: 'line' | 'quad' | 'cubic', p0, p1, ... }`,
-with each one's start point made explicit and `close` turned into its closing
-line. For writing your own geometry on top.
 
 ## Credits
 
