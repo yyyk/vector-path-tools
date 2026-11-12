@@ -15,9 +15,9 @@
 			<h1>vector-path-tools</h1>
 			<p class="lead">
 				Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
-				exact bounding boxes, hit testing, flattening curves into lines within a
-				tolerance, converting cubics to quadratics, and SVG arcs as cubics. Pure
-				TypeScript, no dependencies.
+				exact bounding boxes, hit testing, lengths and points along paths, flattening
+				curves into lines within a tolerance, converting cubics to quadratics, and SVG
+				arcs as cubics. Pure TypeScript, no dependencies.
 			</p>
 			<pre><code class="language-sh">npm install vector-path-tools</code></pre>
 			<pre><code class="language-ts">import { arcTo, bounds, contains, flatten, toQuadratics } from 'vector-path-tools';
@@ -213,6 +213,66 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 				<p class="caption" id="contains-info"></p>
 			</div>
 
+			<h2>
+				<code>measure(path, options?)</code> and <code>pointsAlong(path, spacing)</code>
+			</h2>
+			<p>
+				A path's length, and points with their direction at a distance or a fraction of
+				it, accurate to 1e-10 of each curve's length at any scale. Subpaths continue one
+				into the next, as in SVG. <code>pointsAlong</code> spaces points evenly along
+				each subpath, as p5's <code>textToPoints</code> does for glyphs.
+			</p>
+			<div class="demo">
+				<form class="controls" id="measure-form">
+					<label
+						>fraction
+						<input
+							type="range"
+							name="fraction"
+							min="0"
+							max="1"
+							step="0.005"
+							value="0.3" /><output for="fraction"></output
+					></label>
+					<label
+						>spacing
+						<input
+							type="range"
+							name="spacing"
+							min="4"
+							max="80"
+							step="1"
+							value="20" /><output for="spacing"></output
+					></label>
+				</form>
+				<canvas id="measure"></canvas>
+				<p class="caption" id="measure-info"></p>
+			</div>
+
+			<h2><code>curvePoint(curve, t)</code> and <code>curveTangent(curve, t)</code></h2>
+			<p>
+				One curve's point at its parameter <code>t</code>, and its derivative there: the
+				direction it runs, with its speed as the length. Equal steps in
+				<code>t</code> aren't equal distances along the curve; for those, use
+				<code>measure</code>.
+			</p>
+			<div class="demo">
+				<form class="controls" id="curve-form">
+					<label
+						>t
+						<input
+							type="range"
+							name="t"
+							min="0"
+							max="1"
+							step="0.005"
+							value="0.3" /><output for="t"></output
+					></label>
+				</form>
+				<canvas id="curve"></canvas>
+				<p class="caption" id="curve-info"></p>
+			</div>
+
 			<h2 id="arcTo">
 				<code>arcTo(x0, y0, rx, ry, xAxisRotation, largeArc, sweep, x, y)</code>
 			</h2>
@@ -339,6 +399,16 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 						href="https://github.com/colinmeinke/svg-arc-to-cubic-bezier/blob/f02ab118609817ee562c69aea98579ecd3eb810e/src/index.js"
 						><code>index.js</code></a
 					>, for <code>arcTo</code>.
+				</li>
+				<li>
+					<a href="https://github.com/Pomax/bezierjs">bezierjs</a> (MIT), commit
+					<code>4e76729</code>:
+					<a
+						href="https://github.com/Pomax/bezierjs/blob/4e767299184ab4079dc8d7c970020103db14f431/src/utils.js"
+						><code>utils.js</code></a
+					>, whose 24-point Legendre–Gauss arc length stroke-outline's is based on,
+					for <code>measure</code> and <code>pointsAlong</code> (with error control
+					and points at a distance added in this library).
 				</li>
 			</ul>
 

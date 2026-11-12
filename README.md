@@ -4,8 +4,9 @@
 [![CI](https://github.com/yyyk/vector-path-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/yyyk/vector-path-tools/actions/workflows/ci.yml)
 
 Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
-exact bounding boxes, hit testing, flattening curves into lines within a
-tolerance, converting cubics to quadratics, and SVG arcs as cubics.
+exact bounding boxes, hit testing, lengths and points along paths, flattening
+curves into lines within a tolerance, converting cubics to quadratics, and SVG
+arcs as cubics.
 
 Pure TypeScript, no dependencies, no WebAssembly. Works in browsers, workers
 and Node 20+.
@@ -190,6 +191,50 @@ const path = [
 ];
 ```
 
+### `measure(path, options?)`
+
+Measures the path once, for its length and points along it:
+
+```ts
+const m = measure(path);
+m.length; // the total length (a close line counts)
+m.subpathLengths; // each subpath's length
+m.pointAtLength(120); // { x, y, angle }: 120 along the path, angle in radians
+m.pointAtFraction(0.5); // halfway
+```
+
+Lines are measured exactly; curves with a 24-point Gauss–Legendre quadrature
+(from stroke-outline, based on bezierjs), split where needed until within
+`options.tolerance` of the curve's length (default 1e-10). Points at a distance
+are solved within the same tolerance, so the results don't depend on the
+coordinate units: against kurbo's, lengths and points agree within 1e-9 at
+every scale. Subpaths continue one into the next (the jump at a `moveTo` counts
+as 0), as SVG's `getPointAtLength` does; distances outside 0…length are clamped.
+`pointAtLength` is `null` if the path draws nothing.
+
+### `pointsAlong(path, spacing, options?)`
+
+Points about `spacing` apart along each subpath, with their directions, one
+array per subpath, as p5's `textToPoints` does for glyphs. Each subpath's
+spacing is adjusted slightly so its points are even and reach its end; a
+closed subpath doesn't repeat its start.
+
+### `curvePoint(curve, t)` and `curveTangent(curve, t)`
+
+The point on one curve at its parameter `t` (0…1, clamped), and the curve's
+derivative there: the direction it runs, with its speed as the length
+(`Math.atan2(y, x)` is the angle). A `curve` is a segment from `segments()`, or
+its control points: two for a line, three for a quadratic, four for a cubic.
+
+```ts
+curvePoint([p0, p1, p2, p3], 0.5); // { x, y }
+curveTangent(segments(path)[0], 0); // { x, y }
+```
+
+They use the same evaluation as `measure`. Note that `t` is the curve's own
+parameter, not a fraction of its length; equal steps in `t` aren't equal
+distances along it (use `measure` for that).
+
 ### `segments(path)`
 
 The drawn pieces of a path as `{ type: 'line' | 'quad' | 'cubic', p0, p1, ... }`,
@@ -210,6 +255,9 @@ line. For writing your own geometry on top.
   (2004).
 - **Containment**: [Skia](https://skia.org) (BSD-3-Clause) and
   [fontTools](https://github.com/fonttools/fonttools) (MIT).
+- **Lengths**: stroke-outline's arc length, based on
+  [bezierjs](https://github.com/Pomax/bezierjs) (MIT), with error control and
+  points at a distance added here.
 - **Arcs**: [svg-arc-to-cubic-bezier](https://github.com/colinmeinke/svg-arc-to-cubic-bezier)
   (ISC).
 - **Adaptive flattening**: [kurbo](https://github.com/linebender/kurbo) (MIT),
@@ -231,7 +279,8 @@ cd site && npm install && npm run dev   # docs site
 The reference outputs in `test/fixtures` are generated from the
 originals; each generator's header says how to run it (fontTools with Python,
 kurbo with Rust, bezier-utils with Java, Skia with C++, svg-arc-to-cubic-bezier
-with Node).
+with Node). `node test/fixtures/measure-arclen.mjs` (after `npm run build`)
+measures the arc-length code against kurbo and Skia.
 
 ## License
 

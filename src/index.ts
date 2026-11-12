@@ -4,6 +4,14 @@
 export type { PathCommand, Point, Segment } from './path.js';
 export { segments } from './path.js';
 export { arcTo } from './arc.js';
+export { curvePoint, curveTangent, type Curve } from './curve.js';
+export {
+	measure,
+	pointsAlong,
+	type MeasureOptions,
+	type PathMeasure,
+	type PathPoint,
+} from './measure.js';
 export { bounds, type Bounds } from './bounds.js';
 export {
 	contains,

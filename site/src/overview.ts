@@ -1,9 +1,14 @@
 import {
 	bounds,
 	contains,
+	curvePoint,
+	curveTangent,
 	flatten,
+	measure,
+	pointsAlong,
 	toQuadratics,
 	type ContainsMethod,
+	type Point,
 	type FillRule,
 	type FlattenMethod,
 	type ToQuadraticsMethod,
@@ -254,3 +259,118 @@ const quadEditor = new PathEditor(view($('quad'), W, H), PRESETS.s, e => {
 });
 followDefault(quadForm, 'toQuadratics');
 bind(quadForm, () => quadEditor.redraw());
+
+// ---------- measure / pointsAlong ----------
+const measureForm = $<HTMLFormElement>('measure-form');
+const measureEditor = new PathEditor(view($('measure'), W, H), PRESETS.glyph, e => {
+	const fraction = Number(value(measureForm, 'fraction'));
+	const spacing = Number(value(measureForm, 'spacing'));
+	const m = measure(e.commands);
+	strokePath(e.v, e.commands, css('--input'), 1.5);
+	const { ctx } = e.v;
+	// pointsAlong: a dot per point, with a short tick along its direction.
+	const subpaths = pointsAlong(e.commands, spacing);
+	ctx.save();
+	ctx.strokeStyle = css('--good');
+	ctx.fillStyle = css('--good');
+	ctx.lineWidth = 1.5;
+	for (const points of subpaths)
+		for (const p of points) {
+			ctx.beginPath();
+			ctx.arc(p.x, p.y, 2.5, 0, 2 * Math.PI);
+			ctx.fill();
+			ctx.beginPath();
+			ctx.moveTo(p.x, p.y);
+			ctx.lineTo(p.x + 9 * Math.cos(p.angle), p.y + 9 * Math.sin(p.angle));
+			ctx.stroke();
+		}
+	// pointAtFraction: a ring and an arrow along the direction there.
+	const p = m.pointAtFraction(fraction);
+	if (p) {
+		const [dx, dy] = [Math.cos(p.angle), Math.sin(p.angle)];
+		const [tx, ty] = [p.x + 32 * dx, p.y + 32 * dy];
+		ctx.strokeStyle = css('--accent');
+		ctx.fillStyle = css('--accent');
+		ctx.lineWidth = 2.5;
+		ctx.beginPath();
+		ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.moveTo(p.x, p.y);
+		ctx.lineTo(tx, ty);
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.moveTo(tx, ty);
+		ctx.lineTo(tx - 9 * dx + 5 * dy, ty - 9 * dy - 5 * dx);
+		ctx.lineTo(tx - 9 * dx - 5 * dy, ty - 9 * dy + 5 * dx);
+		ctx.closePath();
+		ctx.fill();
+	}
+	ctx.restore();
+	e.drawHandles();
+	const n = subpaths.reduce((sum, s) => sum + s.length, 0);
+	$('measure-info').textContent =
+		`measure(path).length = ${m.length.toFixed(2)} (subpaths ${m.subpathLengths.map(l => l.toFixed(2)).join(' + ')}). ` +
+		(p
+			? `Blue: pointAtFraction(${fraction}) = { x: ${p.x.toFixed(1)}, y: ${p.y.toFixed(1)}, angle: ${p.angle.toFixed(3)} }. `
+			: '') +
+		`Green: pointsAlong(path, ${spacing}), ${n} points.`;
+});
+bind(measureForm, () => measureEditor.redraw());
+
+// ---------- curvePoint / curveTangent ----------
+const curveForm = $<HTMLFormElement>('curve-form');
+const curveEditor = new PathEditor(view($('curve'), W, H), PRESETS.hook, e => {
+	const t = Number(value(curveForm, 't'));
+	const c = e.commands.find(c => c.type === 'cubicTo');
+	const start = e.commands[0];
+	if (!c || start.type !== 'moveTo') return;
+	const curve = [
+		{ x: start.x, y: start.y },
+		{ x: c.c1x, y: c.c1y },
+		{ x: c.c2x, y: c.c2y },
+		{ x: c.x, y: c.y },
+	] as [Point, Point, Point, Point];
+	strokePath(e.v, e.commands, css('--input'), 1.5);
+	const { ctx } = e.v;
+	// Equal steps in t: dots crowd where the curve is slow.
+	ctx.save();
+	ctx.fillStyle = css('--good');
+	for (let i = 0; i <= 20; i++) {
+		const q = curvePoint(curve, i / 20);
+		ctx.beginPath();
+		ctx.arc(q.x, q.y, 2.5, 0, 2 * Math.PI);
+		ctx.fill();
+	}
+	// The point at t, and the derivative there as an arrow (a third of it, to fit).
+	const p = curvePoint(curve, t);
+	const d = curveTangent(curve, t);
+	const [tx, ty] = [p.x + d.x / 3, p.y + d.y / 3];
+	const len = Math.hypot(d.x, d.y);
+	ctx.strokeStyle = css('--accent');
+	ctx.fillStyle = css('--accent');
+	ctx.lineWidth = 2.5;
+	ctx.beginPath();
+	ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+	ctx.stroke();
+	if (len > 0) {
+		const [ux, uy] = [d.x / len, d.y / len];
+		ctx.beginPath();
+		ctx.moveTo(p.x, p.y);
+		ctx.lineTo(tx, ty);
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.moveTo(tx, ty);
+		ctx.lineTo(tx - 9 * ux + 5 * uy, ty - 9 * uy - 5 * ux);
+		ctx.lineTo(tx - 9 * ux - 5 * uy, ty - 9 * uy + 5 * ux);
+		ctx.closePath();
+		ctx.fill();
+	}
+	ctx.restore();
+	e.drawHandles();
+	$('curve-info').textContent =
+		`curvePoint(curve, ${t}) = { x: ${p.x.toFixed(1)}, y: ${p.y.toFixed(1)} }; ` +
+		`curveTangent(curve, ${t}) = { x: ${d.x.toFixed(1)}, y: ${d.y.toFixed(1)} } (speed ${len.toFixed(1)}, drawn at a third). ` +
+		'Green: t = 0, 0.05 … 1, crowding where the curve is slow.';
+});
+bind(curveForm, () => curveEditor.redraw());

@@ -32,6 +32,13 @@ First release.
   fontTools' method needs more than 100 quadratics.
 - `arcTo(x0, y0, rx, ry, xAxisRotation, largeArc, sweep, x, y)`: an SVG arc as
   cubic commands, ported from svg-arc-to-cubic-bezier.
+- `measure(path, options?)`: a path's length (and each subpath's), and points
+  with directions at a distance or a fraction of it, accurate to 1e-10 of each
+  curve's length at any scale.
+- `pointsAlong(path, spacing, options?)`: evenly spaced points with directions
+  along each subpath, as for p5's `textToPoints`.
+- `curvePoint(curve, t)` and `curveTangent(curve, t)`: a curve's point and
+  derivative at its parameter `t`, for lines, quadratics and cubics.
 - `segments(path)`: the drawn pieces of a path, each with its start point, and
   `close` as its closing line.
 - Path commands in the same format as stroke-outline's, so its outlines can be
