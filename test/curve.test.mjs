@@ -160,3 +160,19 @@ test('split at several parameters: one, none, repeats and the ends', () => {
 	assert.deepEqual(parts.map(point), [true, false, true, false, true]);
 	assert.throws(() => splitCurve(p, [0.5, NaN]), TypeError);
 });
+
+test('segments() is an array, so it can be indexed', () => {
+	const path = [
+		{ type: 'moveTo', x: 0, y: 0 },
+		{ type: 'lineTo', x: 10, y: 0 },
+		{ type: 'quadTo', cx: 15, cy: 5, x: 10, y: 10 },
+		{ type: 'close' },
+	];
+	const segs = segments(path);
+	assert.ok(Array.isArray(segs));
+	assert.deepEqual(
+		segs.map(s => s.type),
+		['line', 'quad', 'line'],
+	);
+	assert.deepEqual(curveTangent(segs[0], 0), P(10, 0));
+});

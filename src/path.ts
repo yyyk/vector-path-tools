@@ -56,11 +56,17 @@ export function checkFinite(c: PathCommand): void {
 }
 
 /**
- * The drawn segments of a path, in order. `close` adds the line back to the
- * subpath's start (when it isn't there already). A drawing command with no
- * `moveTo` before it, or a coordinate that is NaN or infinite, is a TypeError.
+ * The drawn segments of a path, in order, as an array. `close` adds the line
+ * back to the subpath's start (when it isn't there already). A drawing command
+ * with no `moveTo` before it, or a coordinate that is NaN or infinite, is a
+ * TypeError.
  */
-export function* segments(commands: Iterable<PathCommand>): Generator<Segment> {
+export function segments(commands: Iterable<PathCommand>): Segment[] {
+	return [...eachSegment(commands)];
+}
+
+/** {@link segments}, one at a time. */
+export function* eachSegment(commands: Iterable<PathCommand>): Generator<Segment> {
 	let current: Point | null = null;
 	let start: Point | null = null;
 	for (const c of commands) {

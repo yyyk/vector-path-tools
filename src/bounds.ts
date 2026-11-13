@@ -1,5 +1,5 @@
 import { cubicAt, cubicExtremes, quadAt, quadExtremes } from './bezier.js';
-import { segments, type PathCommand } from './path.js';
+import { eachSegment, type PathCommand } from './path.js';
 
 export interface Bounds {
 	minX: number;
@@ -27,7 +27,7 @@ export function bounds(commands: Iterable<PathCommand>): Bounds | null {
 		if (y > maxY) maxY = y;
 	};
 
-	for (const s of segments(commands)) {
+	for (const s of eachSegment(commands)) {
 		// Every segment starts where the previous one ended, so the start point
 		// only matters for the first segment of a subpath; adding it each time
 		// is simpler and just as correct.

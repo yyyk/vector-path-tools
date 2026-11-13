@@ -64,6 +64,8 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 				<code>t</code> aren't equal distances along the curve; for those, use
 				<code>measureCurve</code> (below) or <code>measure</code>.
 			</p>
+			<pre><code class="language-ts">curvePoint([p0, p1, p2, p3], 0.5); // { x, y }
+curveTangent(segments(path)[0], 0); // { x, y }: Math.atan2(y, x) is the angle</code></pre>
 			<div class="demo">
 				<form class="controls" id="curve-form">
 					<label
@@ -140,6 +142,8 @@ splitCurve(curve, [10, 20, 30].map(m.tAtLength)); // at 10, 20 and 30 along</cod
 				cusp, and a segment ends there. One curve at a time: a whole path also needs
 				joins, which is stroking.
 			</p>
+			<pre><code class="language-ts">offsetCurve([p0, p1, p2, p3], 4); // [{ type: 'cubic', p0, p1, p2, p3 }, ...]
+offsetCurve(segments(path)[0], -4, { tolerance: 0.01 });</code></pre>
 			<div class="demo">
 				<form class="controls" id="offset-form">
 					<label
@@ -183,6 +187,13 @@ splitCurve(curve, [10, 20, 30].map(m.tAtLength)); // at 10, 20 and 30 along</cod
 				into the next, as in SVG. <code>pointsAlong</code> spaces points evenly along
 				each subpath, as p5's <code>textToPoints</code> does for glyphs.
 			</p>
+			<pre><code class="language-ts">const m = measure(path);
+m.length; // the total length (a close line counts)
+m.subpathLengths; // each subpath's length
+m.pointAtLength(120); // { x, y, angle }: 120 along the path, angle in radians
+m.pointAtFraction(0.5); // halfway
+
+pointsAlong(path, 20); // [[{ x, y, angle }, ...], ...]: one array per subpath</code></pre>
 			<div class="demo">
 				<form class="controls" id="measure-form">
 					<label
@@ -215,6 +226,7 @@ splitCurve(curve, [10, 20, 30].map(m.tAtLength)); // at 10, 20 and 30 along</cod
 				The exact bounding box of what the path draws: curves count by their extremes,
 				not their control points. <code>null</code> for a path that draws nothing.
 			</p>
+			<pre><code class="language-ts">bounds(path); // { minX, minY, maxX, maxY }, or null</code></pre>
 			<div class="demo">
 				<canvas id="bounds"></canvas>
 				<p class="caption" id="bounds-info"></p>
@@ -228,6 +240,8 @@ splitCurve(curve, [10, 20, 30].map(m.tAtLength)); // at 10, 20 and 30 along</cod
 				under <code>'nonzero'</code>, a hole must wind the other way; under
 				<code>'evenodd'</code>, every nested loop is a hole.
 			</p>
+			<pre><code class="language-ts">contains(path, 50, 70); // true or false
+contains(path, 50, 70, { fillRule: 'evenodd', method: 'fonttools' });</code></pre>
 			<div class="demo">
 				<form class="controls" id="contains-form">
 					<label
@@ -266,6 +280,9 @@ splitCurve(curve, [10, 20, 30].map(m.tAtLength)); // at 10, 20 and 30 along</cod
 				Colomitchi's methods (0.5 px at the least), and is required for kurbo, which
 				suggests no value.
 			</p>
+			<pre><code class="language-ts">toQuadratics(path, 0.1); // kurbo: the tolerance is required
+toQuadratics(path, undefined, { method: 'fonttools' }); // tolerance 1
+toQuadratics(path, 0.5, { method: 'colomitchi-adaptive', detectInflections: true });</code></pre>
 			<div class="demo">
 				<form class="controls" id="quad-form">
 					<label
@@ -304,6 +321,8 @@ splitCurve(curve, [10, 20, 30].map(m.tAtLength)); // at 10, 20 and 30 along</cod
 				<a href="flatten.html"><code>flatten</code> comparison</a> shows them side by
 				side.
 			</p>
+			<pre><code class="language-ts">flatten(path); // only moveTo / lineTo / close, every line within 0.25 of the curve
+flatten(path, 0.1, { method: 'adaptive' });</code></pre>
 			<div class="demo">
 				<form class="controls" id="flatten-form">
 					<label
