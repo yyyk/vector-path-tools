@@ -5,6 +5,7 @@ import {
 	curveTangent,
 	flatten,
 	measure,
+	offsetCurve,
 	pointsAlong,
 	toQuadratics,
 	type ContainsMethod,
@@ -374,3 +375,75 @@ const curveEditor = new PathEditor(view($('curve'), W, H), PRESETS.hook, e => {
 		'Green: t = 0, 0.05 … 1, crowding where the curve is slow.';
 });
 bind(curveForm, () => curveEditor.redraw());
+
+// ---------- offsetCurve ----------
+const offsetForm = $<HTMLFormElement>('offset-form');
+const offsetEditor = new PathEditor(view($('offset'), W, H), PRESETS.hook, e => {
+	const distance = Number(value(offsetForm, 'distance'));
+	const tolerance = Number(value(offsetForm, 'tolerance'));
+	showTolerance(offsetForm, tolerance, 0.25);
+	const c = e.commands.find(c => c.type === 'cubicTo');
+	const start = e.commands[0];
+	if (!c || start.type !== 'moveTo') return;
+	const curve = [
+		{ x: start.x, y: start.y },
+		{ x: c.c1x, y: c.c1y },
+		{ x: c.c2x, y: c.c2y },
+		{ x: c.x, y: c.y },
+	] as [Point, Point, Point, Point];
+	const { ctx } = e.v;
+	strokePath(e.v, e.commands, css('--input'), 1.5);
+	// The segments, in alternating colors, joined at the dots.
+	const segs = offsetCurve(curve, distance, { tolerance });
+	segs.forEach((s, i) => {
+		const [a, b, cc, d] =
+			s.type === 'cubic' ? [s.p0, s.p1, s.p2, s.p3] : [s.p0, s.p0, s.p0, s.p0];
+		strokePath(
+			e.v,
+			[
+				{ type: 'moveTo', x: a.x, y: a.y },
+				{ type: 'cubicTo', c1x: b.x, c1y: b.y, c2x: cc.x, c2y: cc.y, x: d.x, y: d.y },
+			],
+			i % 2 ? css('--accent') : css('--good'),
+			2.5,
+		);
+		ctx.fillStyle = css('--fg');
+		ctx.beginPath();
+		ctx.arc(d.x, d.y, 3, 0, 2 * Math.PI);
+		ctx.fill();
+	});
+	// The exact offset on top, dashed; and whether it folds: where d times the
+	// curvature passes 1, it turns back on itself.
+	let folds = false;
+	ctx.save();
+	ctx.strokeStyle = css('--fg');
+	ctx.lineWidth = 1;
+	ctx.setLineDash([4, 3]);
+	ctx.beginPath();
+	let started = false;
+	for (let i = 0; i <= 800; i++) {
+		const t = i / 800;
+		const p = curvePoint(curve, t);
+		const d = curveTangent(curve, t);
+		const len = Math.hypot(d.x, d.y);
+		if (!(len > 0)) continue;
+		const d2 = curveTangent(curve, Math.min(1, t + 1e-6));
+		const turn = (d.x * (d2.y - d.y) - d.y * (d2.x - d.x)) / 1e-6 / len ** 3;
+		if (distance * turn > 1) folds = true;
+		const q = { x: p.x - (distance * d.y) / len, y: p.y + (distance * d.x) / len };
+		if (started) ctx.lineTo(q.x, q.y);
+		else ctx.moveTo(q.x, q.y);
+		started = true;
+	}
+	ctx.stroke();
+	ctx.restore();
+	e.drawHandles();
+	const options = tolerance === 0.25 ? '' : `, { tolerance: ${tolerance} }`;
+	$('offset-info').textContent =
+		`offsetCurve(curve, ${distance}${options}): ${segs.length} cubic${segs.length === 1 ? '' : 's'} ` +
+		'(alternating colors, joined at the dots), within the tolerance of the exact offset (dashed).' +
+		(folds
+			? ' Here the distance exceeds the radius of curvature: the exact offset turns back on itself at a cusp, and the segments follow it.'
+			: '');
+});
+bind(offsetForm, () => offsetEditor.redraw());

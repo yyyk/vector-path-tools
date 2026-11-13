@@ -12,6 +12,7 @@ export {
 	type PathMeasure,
 	type PathPoint,
 } from './measure.js';
+export { offsetCurve, type OffsetOptions } from './offset.js';
 export { bounds, type Bounds } from './bounds.js';
 export {
 	contains,

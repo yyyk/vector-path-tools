@@ -6,7 +6,7 @@
 		<title>vector-path-tools</title>
 		<meta
 			name="description"
-			content="Geometry for vector paths: exact bounds, flattening within a tolerance, cubic-to-quadratic conversion. Pure TypeScript."
+			content="Geometry for vector paths: exact bounds, hit testing, lengths and points along paths, offset curves, flattening within a tolerance, cubic-to-quadratic conversion and SVG arcs. Pure TypeScript."
 		/>
 		<script type="module" src="/src/overview.ts"></script>
 	</head>
@@ -15,9 +15,9 @@
 			<h1>vector-path-tools</h1>
 			<p class="lead">
 				Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
-				exact bounding boxes, hit testing, lengths and points along paths, flattening
-				curves into lines within a tolerance, converting cubics to quadratics, and SVG
-				arcs as cubics. Pure TypeScript, no dependencies.
+				exact bounding boxes, hit testing, lengths and points along paths, offset
+				curves, flattening curves into lines within a tolerance, converting cubics to
+				quadratics, and SVG arcs as cubics. Pure TypeScript, no dependencies.
 			</p>
 			<pre><code class="language-sh">npm install vector-path-tools</code></pre>
 			<pre><code class="language-ts">import { arcTo, bounds, contains, flatten, toQuadratics } from 'vector-path-tools';
@@ -79,6 +79,42 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 				</form>
 				<canvas id="curve"></canvas>
 				<p class="caption" id="curve-info"></p>
+			</div>
+
+			<h2><code>offsetCurve(curve, distance, options?)</code></h2>
+			<p>
+				One curve moved sideways by <code>distance</code> at every point, as segments of
+				the same kind, within <code>options.tolerance</code> of the exact offset (in
+				path units, default 0.25). Positive distances are on the right on screen. Where
+				the distance exceeds the curve's radius of curvature, the offset folds into a
+				cusp, and a segment ends there. One curve at a time: a whole path also needs
+				joins, which is stroking.
+			</p>
+			<div class="demo">
+				<form class="controls" id="offset-form">
+					<label
+						>distance
+						<input
+							type="range"
+							name="distance"
+							min="-120"
+							max="120"
+							step="1"
+							value="30" /><output for="distance"></output
+					></label>
+					<label
+						>tolerance
+						<input
+							type="range"
+							name="tolerance"
+							min="0.25"
+							max="10"
+							step="0.25"
+							value="0.25" /><output for="tolerance"></output
+					></label>
+				</form>
+				<canvas id="offset"></canvas>
+				<p class="caption" id="offset-info"></p>
 			</div>
 
 			<h2>
@@ -408,7 +444,13 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 						><code>utils.js</code></a
 					>, whose 24-point Legendre–Gauss arc length stroke-outline's is based on,
 					for <code>measure</code> and <code>pointsAlong</code> (with error control
-					and points at a distance added in this library).
+					and points at a distance added in this library); and
+					<a
+						href="https://github.com/Pomax/bezierjs/blob/4e767299184ab4079dc8d7c970020103db14f431/src/bezier.js"
+						><code>bezier.js</code></a
+					>, whose <code>simple</code>, <code>scale</code> and
+					<code>reduce</code> stroke-outline's curve offsetting is based on, for
+					<code>offsetCurve</code>.
 				</li>
 			</ul>
 

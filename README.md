@@ -4,9 +4,9 @@
 [![CI](https://github.com/yyyk/vector-path-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/yyyk/vector-path-tools/actions/workflows/ci.yml)
 
 Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
-exact bounding boxes, hit testing, lengths and points along paths, flattening
-curves into lines within a tolerance, converting cubics to quadratics, and SVG
-arcs as cubics.
+exact bounding boxes, hit testing, lengths and points along paths, offset
+curves, flattening curves into lines within a tolerance, converting cubics to
+quadratics, and SVG arcs as cubics.
 
 Pure TypeScript, no dependencies, no WebAssembly. Works in browsers, workers
 and Node 20+.
@@ -135,6 +135,29 @@ They use the same evaluation as `measure`. Note that `t` is the curve's own
 parameter, not a fraction of its length; equal steps in `t` aren't equal
 distances along it (use `measure` for that).
 
+### `offsetCurve(curve, distance, options?)`
+
+The curve moved sideways by `distance` at every point (its offset, or parallel,
+curve), as segments of the same kind, within `options.tolerance` of the exact
+offset (default 0.25, in path units, as `flatten`'s). A `curve` is as for
+`curvePoint`. Positive distances are on the side of the curve's direction
+turned 90° from x toward y: on the right on screen, where y points down.
+
+```ts
+offsetCurve([p0, p1, p2, p3], 4); // [{ type: 'cubic', p0, p1, p2, p3 }, ...]
+offsetCurve(segments(path)[0], -4, { tolerance: 0.01 });
+```
+
+A line gives one line. A curve is split at its extremes and halved until each
+piece's offset, built from the piece's end normals, is within the tolerance;
+where the distance exceeds the curve's radius of curvature, the offset folds
+into a cusp, and a segment ends there. It is stroke-outline's offsetting, with
+the tolerance chosen here. At a cusp of the curve itself (where it stops and
+turns back), the pieces next to it are only halved so far, so very small
+tolerances may not be reached there: offset by 5, a 100-unit cusp gets within
+about 0.002. One curve at a time: offsetting a whole path also
+needs joins between its curves, which is stroking (stroke-outline does that).
+
 ### `measure(path, options?)`
 
 Measures the path once, for its length and points along it:
@@ -258,6 +281,8 @@ const path = [
 - **Lengths**: stroke-outline's arc length, based on
   [bezierjs](https://github.com/Pomax/bezierjs) (MIT), with error control and
   points at a distance added here.
+- **Offset curves**: stroke-outline's curve offsetting, based on
+  [bezierjs](https://github.com/Pomax/bezierjs) (MIT).
 - **Arcs**: [svg-arc-to-cubic-bezier](https://github.com/colinmeinke/svg-arc-to-cubic-bezier)
   (ISC).
 - **Adaptive flattening**: [kurbo](https://github.com/linebender/kurbo) (MIT),
@@ -278,9 +303,11 @@ cd site && npm install && npm run dev   # docs site
 
 The reference outputs in `test/fixtures` are generated from the
 originals; each generator's header says how to run it (fontTools with Python,
-kurbo with Rust, bezier-utils with Java, Skia with C++, svg-arc-to-cubic-bezier
-with Node). `node test/fixtures/measure-arclen.mjs` (after `npm run build`)
-measures the arc-length code against kurbo and Skia.
+kurbo with Rust, bezier-utils with Java, Skia and stroke-outline with C++,
+svg-arc-to-cubic-bezier with Node). After `npm run build`,
+`node test/fixtures/measure-arclen.mjs` measures the arc-length code against
+kurbo and Skia, and `node test/fixtures/measure-offset.mjs` the offsets against
+the exact offset and kurbo's.
 
 ## License
 

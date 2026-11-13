@@ -393,10 +393,13 @@ THIS SOFTWARE.
 --------------------------------------------------------------------------------
 bezierjs (https://github.com/Pomax/bezierjs)
 
-src/stroke-outline/arc-length.ts is ported from stroke-outline, whose arc
-length is based on bezierjs' Bezier.length and utils.length (src/bezier.js,
-src/utils.js; checked at commit 4e767299184ab4079dc8d7c970020103db14f431): the
-24-point Legendre-Gauss quadrature and its constants. bezierjs is licensed
+src/stroke-outline/arc-length.ts and src/stroke-outline/offset.ts are ported
+from stroke-outline, whose arc length and curve offsetting are based on
+bezierjs (src/bezier.js, src/utils.js; checked at commit
+4e767299184ab4079dc8d7c970020103db14f431): for the arc length, Bezier.length
+and utils.length, with their 24-point Legendre-Gauss constants; for
+offsetting, Bezier.simple, utils.angle, the construction of Bezier.scale, and
+splitting at extrema as Bezier.reduce does. bezierjs is licensed
 under the MIT License:
 
 MIT License

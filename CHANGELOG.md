@@ -39,6 +39,10 @@ First release.
   along each subpath, as for p5's `textToPoints`.
 - `curvePoint(curve, t)` and `curveTangent(curve, t)`: a curve's point and
   derivative at its parameter `t`, for lines, quadratics and cubics.
+- `offsetCurve(curve, distance, options?)`: a curve's offset (parallel) curve,
+  as segments of the same kind within `options.tolerance` (default 0.25) of the
+  exact offset, split where the offset folds into a cusp. stroke-outline's curve
+  offsetting, based on bezierjs.
 - `segments(path)`: the drawn pieces of a path, each with its start point, and
   `close` as its closing line.
 - Path commands in the same format as stroke-outline's, so its outlines can be

@@ -18,7 +18,7 @@ export type Curve =
 	Segment | [Point, Point] | [Point, Point, Point] | [Point, Point, Point, Point];
 
 /** The curve's points, checked: 2, 3 or 4 finite ones. */
-function controlPoints(curve: Curve): Point[] {
+export function controlPoints(curve: Curve): Point[] {
 	const points = Array.isArray(curve)
 		? curve
 		: curve.type === 'line'
