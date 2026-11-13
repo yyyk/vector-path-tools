@@ -2,10 +2,10 @@
 // 084fd2ca8eb0065951b240a917df5d8d2e616bfd: offset_quadratic_bezier,
 // offset_cubic_bezier and their helpers in src/bezier/offset.cpp;
 // find_derivative_extrema_for_quadratic and find_derivative_extrema_for_cubic
-// in src/bezier/utils.cpp; split_quadratic_bezier and split_cubic_bezier in
-// src/bezier/bezier.hpp; line_intersection in src/math/geom.hpp; and
+// in src/bezier/utils.cpp; line_intersection in src/math/geom.hpp; and
 // normalize_coefficients in src/math/polynomial.hpp. Same author and license as
-// this package.
+// this package. The curve splitting it uses (src/bezier/bezier.hpp) is ported
+// in bezier.ts.
 //
 // stroke-outline's offsetting is based on bezierjs (https://github.com/Pomax/bezierjs,
 // Copyright (c) 2023 Pomax, MIT license: see THIRD_PARTY_NOTICES): Bezier.simple,
@@ -22,6 +22,7 @@ import {
 	quadraticBezier,
 	quadraticBezierDerivative,
 } from './arc-length.js';
+import { splitCubicBezier, splitQuadraticBezier } from './bezier.js';
 
 type Quad = [Point, Point, Point];
 type Cubic = [Point, Point, Point, Point];
@@ -38,10 +39,6 @@ const dot = (a: Point, b: Point) => a.x * b.x + a.y * b.y;
 const cross = (a: Point, b: Point) => a.x * b.y - a.y * b.x;
 const lengthSquared = (v: Point) => v.x * v.x + v.y * v.y;
 const length = (v: Point) => Math.sqrt(lengthSquared(v));
-const lerp = (a: Point, b: Point, t: number): Point => ({
-	x: a.x + (b.x - a.x) * t,
-	y: a.y + (b.y - a.y) * t,
-});
 
 function normalize(v: Point): Point | null {
 	const len = length(v);
@@ -72,41 +69,6 @@ function lineIntersection(p1: Point, p2: Point, p3: Point, p4: Point): Point | n
 
 	const t = cross(sub(p3, p1), s) / rCrossS;
 	return add(p1, { x: t * r.x, y: t * r.y });
-}
-
-// ---------- bezier/bezier.hpp ----------
-
-export function splitQuadraticBezier(c: Quad, t: number): [Quad, Quad] {
-	t = Math.min(Math.max(t, 0.0), 1.0);
-	const [p0, p1, p2] = c;
-
-	const a = lerp(p0, p1, t);
-	const b = lerp(p1, p2, t);
-	const d = lerp(a, b, t);
-
-	return [
-		[p0, a, d],
-		[d, b, p2],
-	];
-}
-
-export function splitCubicBezier(c: Cubic, t: number): [Cubic, Cubic] {
-	t = Math.min(Math.max(t, 0.0), 1.0);
-	const [p0, p1, p2, p3] = c;
-
-	const a = lerp(p0, p1, t);
-	const b = lerp(p1, p2, t);
-	const cc = lerp(p2, p3, t);
-
-	const d = lerp(a, b, t);
-	const e = lerp(b, cc, t);
-
-	const f = lerp(d, e, t);
-
-	return [
-		[p0, a, d, f],
-		[f, e, cc, p3],
-	];
 }
 
 // ---------- bezier/utils.cpp ----------

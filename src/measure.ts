@@ -1,9 +1,10 @@
 import {
-	CurveMeasure,
+	type CurveMeasure as ArcLength,
 	cubicMeasure,
 	DEFAULT_RELATIVE_TOLERANCE,
 	quadraticMeasure,
 } from './arc-length.js';
+import { controlPoints, type Curve } from './curve.js';
 import { checkFinite, type PathCommand, type Point } from './path.js';
 import {
 	cubicBezier,
@@ -44,10 +45,21 @@ export interface PathMeasure {
 	pointAtFraction(fraction: number): PathPoint | null;
 }
 
+/** One curve's length, and its parameter at distances along it. See {@link measureCurve}. */
+export interface CurveMeasure {
+	/** The curve's length. */
+	readonly length: number;
+	/**
+	 * The curve's parameter t where its length from the start reaches
+	 * `distance` (clamped to 0…length), for `curvePoint` or `splitCurve`.
+	 */
+	tAtLength(distance: number): number;
+}
+
 type Segment =
 	| { type: 'line'; p0: Point; p1: Point; length: number }
-	| { type: 'quad'; p: [Point, Point, Point]; m: CurveMeasure; length: number }
-	| { type: 'cubic'; p: [Point, Point, Point, Point]; m: CurveMeasure; length: number };
+	| { type: 'quad'; p: [Point, Point, Point]; m: ArcLength; length: number }
+	| { type: 'cubic'; p: [Point, Point, Point, Point]; m: ArcLength; length: number };
 
 interface Subpath {
 	segments: Segment[];
@@ -208,6 +220,41 @@ export function measure(
 		subpathLengths: subs.map(s => s.length),
 		pointAtLength,
 		pointAtFraction: fraction => pointAtLength(fraction * length),
+	};
+}
+
+/**
+ * Measures one curve once, for its length and for its parameter at distances
+ * along it: to split it, or find its points, at a distance rather than at a
+ * parameter. As accurate as {@link measure}.
+ */
+export function measureCurve(curve: Curve, options: MeasureOptions = {}): CurveMeasure {
+	const p = controlPoints(curve).map(q => ({ x: q.x, y: q.y }));
+	const tolerance = checkTolerance(options);
+	const checkDistance = (distance: number) => {
+		if (Number.isNaN(distance)) throw new TypeError('distance must be a number (got NaN)');
+	};
+	if (p.length === 2) {
+		const d = minus(p[1], p[0]);
+		const length = Math.sqrt(d.x * d.x + d.y * d.y);
+		return {
+			length,
+			tAtLength: distance => {
+				checkDistance(distance);
+				return length > 0 ? Math.min(Math.max(distance / length, 0), 1) : 0;
+			},
+		};
+	}
+	const m =
+		p.length === 3
+			? quadraticMeasure(p[0], p[1], p[2], tolerance)
+			: cubicMeasure(p[0], p[1], p[2], p[3], tolerance);
+	return {
+		length: m.length,
+		tAtLength: distance => {
+			checkDistance(distance);
+			return m.tAtLength(distance);
+		},
 	};
 }
 

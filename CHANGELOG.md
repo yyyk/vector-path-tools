@@ -39,6 +39,11 @@ First release.
   along each subpath, as for p5's `textToPoints`.
 - `curvePoint(curve, t)` and `curveTangent(curve, t)`: a curve's point and
   derivative at its parameter `t`, for lines, quadratics and cubics.
+- `splitCurve(curve, t)`: a curve split in two at its parameter `t`, or with
+  an array of parameters, at each of them, as segments of the same kind (de
+  Casteljau's construction).
+- `measureCurve(curve, options?)`: one curve's length, and its parameter at a
+  distance along it, to split it or find its points at distances.
 - `offsetCurve(curve, distance, options?)`: a curve's offset (parallel) curve,
   as segments of the same kind within `options.tolerance` (default 0.25) of the
   exact offset, split where the offset folds into a cusp. stroke-outline's curve

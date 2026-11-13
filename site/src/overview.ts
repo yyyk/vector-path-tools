@@ -5,15 +5,18 @@ import {
 	curveTangent,
 	flatten,
 	measure,
+	measureCurve,
 	offsetCurve,
 	pointsAlong,
+	splitCurve,
 	toQuadratics,
 	type ContainsMethod,
-	type Curve,
 	type FillRule,
 	type FlattenMethod,
 	type ToQuadraticsMethod,
 	type PathCommand,
+	type Point,
+	type Segment,
 } from 'vector-path-tools';
 import {
 	callCode,
@@ -101,6 +104,55 @@ function controlBox(commands: readonly PathCommand[]) {
 		maxY: Math.max(...ys),
 	};
 }
+
+/** An editor's single curve (a moveTo, then a quadTo or cubicTo) as its control points. */
+function curveOf(
+	commands: readonly PathCommand[],
+): [Point, Point, Point] | [Point, Point, Point, Point] | null {
+	const [start, c] = commands;
+	if (start?.type !== 'moveTo' || (c?.type !== 'cubicTo' && c?.type !== 'quadTo'))
+		return null;
+	return c.type === 'cubicTo'
+		? [
+				{ x: start.x, y: start.y },
+				{ x: c.c1x, y: c.c1y },
+				{ x: c.c2x, y: c.c2y },
+				{ x: c.x, y: c.y },
+			]
+		: [
+				{ x: start.x, y: start.y },
+				{ x: c.cx, y: c.cy },
+				{ x: c.x, y: c.y },
+			];
+}
+
+/** A segment as path commands, to draw. */
+function segmentPath(s: Segment): PathCommand[] {
+	return [
+		{ type: 'moveTo', x: s.p0.x, y: s.p0.y },
+		s.type === 'cubic'
+			? {
+					type: 'cubicTo',
+					c1x: s.p1.x,
+					c1y: s.p1.y,
+					c2x: s.p2.x,
+					c2y: s.p2.y,
+					x: s.p3.x,
+					y: s.p3.y,
+				}
+			: s.type === 'quad'
+				? { type: 'quadTo', cx: s.p1.x, cy: s.p1.y, x: s.p2.x, y: s.p2.y }
+				: { type: 'lineTo', x: s.p1.x, y: s.p1.y },
+	];
+}
+
+const segmentPoints = (s: Segment) =>
+	s.type === 'line'
+		? [s.p0, s.p1]
+		: s.type === 'quad'
+			? [s.p0, s.p1, s.p2]
+			: [s.p0, s.p1, s.p2, s.p3];
+const segmentEnd = (s: Segment) => segmentPoints(s).at(-1)!;
 
 // ---------- bounds ----------
 new PathEditor(view($('bounds'), W, H), PRESETS.drop, e => {
@@ -323,21 +375,8 @@ bind(measureForm, () => measureEditor.redraw());
 const curveForm = $<HTMLFormElement>('curve-form');
 const curveEditor = new PathEditor(view($('curve'), W, H), PRESETS.hook, e => {
 	const t = Number(value(curveForm, 't'));
-	const [start, c] = e.commands;
-	if (start?.type !== 'moveTo' || (c?.type !== 'cubicTo' && c?.type !== 'quadTo')) return;
-	const curve: Curve =
-		c.type === 'cubicTo'
-			? [
-					{ x: start.x, y: start.y },
-					{ x: c.c1x, y: c.c1y },
-					{ x: c.c2x, y: c.c2y },
-					{ x: c.x, y: c.y },
-				]
-			: [
-					{ x: start.x, y: start.y },
-					{ x: c.cx, y: c.cy },
-					{ x: c.x, y: c.y },
-				];
+	const curve = curveOf(e.commands);
+	if (!curve) return;
 	strokePath(e.v, e.commands, css('--input'), 1.5);
 	const { ctx } = e.v;
 	// Equal steps in t: dots crowd where the curve is slow.
@@ -388,54 +427,79 @@ bind(curveForm, () => {
 	curveEditor.set(curve === 'quad' ? PRESETS.hookQuad : PRESETS.hook);
 });
 
+// ---------- splitCurve / measureCurve ----------
+const splitForm = $<HTMLFormElement>('split-form');
+const splitEditor = new PathEditor(view($('split'), W, H), PRESETS.hook, e => {
+	const curve = curveOf(e.commands);
+	if (!curve) return;
+	const n = Number(value(splitForm, 'parts'));
+	const byLength = value(splitForm, 'by') === 'length';
+	const m = measureCurve(curve);
+	const distances = Array.from({ length: n - 1 }, (_, i) => (m.length * (i + 1)) / n);
+	const ts = byLength
+		? distances.map(m.tAtLength)
+		: Array.from({ length: n - 1 }, (_, i) => (i + 1) / n);
+	const parts = splitCurve(curve, ts);
+	const { ctx } = e.v;
+	// Each part's own control points, dashed: every part is a Bézier curve.
+	ctx.save();
+	ctx.strokeStyle = css('--input');
+	ctx.lineWidth = 1;
+	ctx.setLineDash([3, 3]);
+	for (const s of parts) {
+		const [first, ...rest] = segmentPoints(s);
+		ctx.beginPath();
+		ctx.moveTo(first.x, first.y);
+		for (const q of rest) ctx.lineTo(q.x, q.y);
+		ctx.stroke();
+	}
+	ctx.restore();
+	// The parts, in alternating colors, joined at the dots.
+	parts.forEach((s, i) =>
+		strokePath(e.v, segmentPath(s), i % 2 ? css('--accent') : css('--good'), 2.5),
+	);
+	ctx.fillStyle = css('--fg');
+	for (const s of parts.slice(0, -1)) {
+		const end = segmentEnd(s);
+		ctx.beginPath();
+		ctx.arc(end.x, end.y, 3.5, 0, 2 * Math.PI);
+		ctx.fill();
+	}
+	e.drawHandles();
+	const kind = curve.length === 4 ? 'cubics' : 'quadratics';
+	const lengths = parts.map(s => measureCurve(s).length.toFixed(1)).join(', ');
+	const list = (xs: number[], digits: number) =>
+		`[${xs.map(x => x.toFixed(digits)).join(', ')}]`;
+	$('split-info').textContent =
+		(byLength
+			? `m = measureCurve(curve), m.length = ${m.length.toFixed(1)}; ` +
+				`splitCurve(curve, ${list(distances, 1)}.map(m.tAtLength)): ${n} ${kind} of equal lengths ${lengths}`
+			: `splitCurve(curve, ${list(ts, 3)}): ${n} ${kind} of lengths ${lengths}; equal steps in t aren't equal lengths`) +
+		' (alternating colors, joined at the dots; dashed: each part’s control points).';
+});
+let lastSplitCurve = 'cubic';
+bind(splitForm, () => {
+	const curve = value(splitForm, 'curve');
+	if (curve === lastSplitCurve) return splitEditor.redraw();
+	lastSplitCurve = curve;
+	splitEditor.set(curve === 'quad' ? PRESETS.hookQuad : PRESETS.hook);
+});
+
 // ---------- offsetCurve ----------
 const offsetForm = $<HTMLFormElement>('offset-form');
 const offsetEditor = new PathEditor(view($('offset'), W, H), PRESETS.hook, e => {
 	const distance = Number(value(offsetForm, 'distance'));
 	const tolerance = Number(value(offsetForm, 'tolerance'));
 	showTolerance(offsetForm, tolerance, 0.25);
-	const [start, c] = e.commands;
-	if (start?.type !== 'moveTo' || (c?.type !== 'cubicTo' && c?.type !== 'quadTo')) return;
-	const curve: Curve =
-		c.type === 'cubicTo'
-			? [
-					{ x: start.x, y: start.y },
-					{ x: c.c1x, y: c.c1y },
-					{ x: c.c2x, y: c.c2y },
-					{ x: c.x, y: c.y },
-				]
-			: [
-					{ x: start.x, y: start.y },
-					{ x: c.cx, y: c.cy },
-					{ x: c.x, y: c.y },
-				];
+	const curve = curveOf(e.commands);
+	if (!curve) return;
 	const { ctx } = e.v;
 	strokePath(e.v, e.commands, css('--input'), 1.5);
 	// The segments, in alternating colors, joined at the dots.
 	const segs = offsetCurve(curve, distance, { tolerance });
 	segs.forEach((s, i) => {
-		const end = s.type === 'line' ? s.p1 : s.type === 'quad' ? s.p2 : s.p3;
-		strokePath(
-			e.v,
-			[
-				{ type: 'moveTo', x: s.p0.x, y: s.p0.y },
-				s.type === 'cubic'
-					? {
-							type: 'cubicTo',
-							c1x: s.p1.x,
-							c1y: s.p1.y,
-							c2x: s.p2.x,
-							c2y: s.p2.y,
-							x: s.p3.x,
-							y: s.p3.y,
-						}
-					: s.type === 'quad'
-						? { type: 'quadTo', cx: s.p1.x, cy: s.p1.y, x: s.p2.x, y: s.p2.y }
-						: { type: 'lineTo', x: s.p1.x, y: s.p1.y },
-			],
-			i % 2 ? css('--accent') : css('--good'),
-			2.5,
-		);
+		const end = segmentEnd(s);
+		strokePath(e.v, segmentPath(s), i % 2 ? css('--accent') : css('--good'), 2.5);
 		ctx.fillStyle = css('--fg');
 		ctx.beginPath();
 		ctx.arc(end.x, end.y, 3, 0, 2 * Math.PI);
@@ -469,7 +533,7 @@ const offsetEditor = new PathEditor(view($('offset'), W, H), PRESETS.hook, e => 
 	e.drawHandles();
 	const options = tolerance === 0.25 ? '' : `, { tolerance: ${tolerance} }`;
 	$('offset-info').textContent =
-		`offsetCurve(curve, ${distance}${options}): ${segs.length} ${c.type === 'cubicTo' ? 'cubic' : 'quadratic'}${segs.length === 1 ? '' : 's'} ` +
+		`offsetCurve(curve, ${distance}${options}): ${segs.length} ${curve.length === 4 ? 'cubic' : 'quadratic'}${segs.length === 1 ? '' : 's'} ` +
 		'(alternating colors, joined at the dots), within the tolerance of the exact offset (dashed).' +
 		(folds
 			? ' Here the distance exceeds the radius of curvature: the exact offset turns back on itself at a cusp, and the segments follow it.'

@@ -4,8 +4,8 @@
 [![CI](https://github.com/yyyk/vector-path-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/yyyk/vector-path-tools/actions/workflows/ci.yml)
 
 Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
-exact bounding boxes, hit testing, lengths and points along paths, offset
-curves, flattening curves into lines within a tolerance, converting cubics to
+exact bounding boxes, hit testing, lengths and points along paths, splitting
+and offsetting curves, flattening curves into lines within a tolerance, converting cubics to
 quadratics, and SVG arcs as cubics.
 
 Pure TypeScript, no dependencies, no WebAssembly. Works in browsers, workers
@@ -134,6 +134,42 @@ curveTangent(segments(path)[0], 0); // { x, y }
 They use the same evaluation as `measure`. Note that `t` is the curve's own
 parameter, not a fraction of its length; equal steps in `t` aren't equal
 distances along it (use `measure` for that).
+
+### `splitCurve(curve, t)` and `splitCurve(curve, ts)`
+
+One curve split at its parameter `t` (0…1, clamped), as segments of the same
+kind: the part before `t` and the part after, which together draw exactly the
+curve (de Casteljau's construction). A `curve` is as for `curvePoint`. The
+first part starts at the curve's start, the last ends at its end, and each
+starts where the one before ends.
+
+With an array of parameters (in any order), it splits at each of them:
+`ts.length + 1` parts in order along the curve. A repeated parameter, or 0 or
+1, gives a part that is a single point, so the count is always the same.
+
+```ts
+const [before, after] = splitCurve([p0, p1, p2, p3], 0.5);
+// before: { type: 'cubic', p0, p1, p2, p3 }, ending where after starts
+splitCurve(curve, [0.25, 0.5, 0.75]); // four parts
+```
+
+To split at distances along the curve instead, get their parameters from
+`measureCurve`.
+
+### `measureCurve(curve, options?)`
+
+Measures one curve once, for its length and its parameter at distances along
+it, as accurately as `measure` (`options.tolerance` is the same). A `curve` is
+as for `curvePoint`.
+
+```ts
+const m = measureCurve(curve);
+m.length; // the curve's length
+m.tAtLength(30); // the t 30 along it (distances clamped to 0…length)
+splitCurve(curve, m.tAtLength(m.length / 2)); // two halves of equal length
+splitCurve(curve, [10, 20, 30].map(m.tAtLength)); // at 10, 20 and 30 along
+curvePoint(curve, m.tAtLength(30)); // the point 30 along
+```
 
 ### `offsetCurve(curve, distance, options?)`
 

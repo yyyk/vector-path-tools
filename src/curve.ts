@@ -1,6 +1,8 @@
 // The point and derivative of one curve at its parameter t, with the same
 // evaluation `measure` uses (stroke-outline's, ported in
-// stroke-outline/arc-length.ts), so the two always agree.
+// stroke-outline/arc-length.ts), so the two always agree; and the curve split
+// in two there, by stroke-outline's de Casteljau split (ported in
+// stroke-outline/bezier.ts).
 
 import type { Point, Segment } from './path.js';
 import {
@@ -9,6 +11,7 @@ import {
 	quadraticBezier,
 	quadraticBezierDerivative,
 } from './stroke-outline/arc-length.js';
+import { splitCubicBezier, splitQuadraticBezier } from './stroke-outline/bezier.js';
 
 /**
  * One curve: a segment from `segments()`, or its control points (two for a
@@ -66,4 +69,60 @@ export function curveTangent(curve: Curve, t: number): Point {
 	if (p.length === 2) return { x: p[1].x - p[0].x, y: p[1].y - p[0].y };
 	if (p.length === 3) return quadraticBezierDerivative(p[0], p[1], p[2], t);
 	return cubicBezierDerivative(p[0], p[1], p[2], p[3], t);
+}
+
+/** The control points split in two at `t` (in 0…1). */
+function splitPoints(p: Point[], t: number): [Point[], Point[]] {
+	if (p.length === 2) {
+		// As curvePoint does for lines.
+		const u = 1 - t;
+		const m = { x: u * p[0].x + t * p[1].x, y: u * p[0].y + t * p[1].y };
+		return [
+			[p[0], m],
+			[m, p[1]],
+		];
+	}
+	if (p.length === 3) return splitQuadraticBezier([p[0], p[1], p[2]], t);
+	return splitCubicBezier([p[0], p[1], p[2], p[3]], t);
+}
+
+/** The control points as a segment, with new point objects. */
+function toSegment(p: Point[]): Segment {
+	const [p0, p1, p2, p3] = p.map(q => ({ x: q.x, y: q.y }));
+	return p.length === 2
+		? { type: 'line', p0, p1 }
+		: p.length === 3
+			? { type: 'quad', p0, p1, p2 }
+			: { type: 'cubic', p0, p1, p2, p3 };
+}
+
+/**
+ * The curve split in two at its parameter `t` (clamped to 0…1): the part
+ * before and the part after, as segments of the same kind, which together
+ * draw exactly the curve. The first starts at the curve's start, the second
+ * ends at its end, and the second starts where the first ends. At t = 0 or 1,
+ * one part is a single point.
+ */
+export function splitCurve(curve: Curve, t: number): [Segment, Segment];
+/**
+ * The curve split at each of the parameters `ts` (each clamped to 0…1, in any
+ * order): `ts.length + 1` parts in order along the curve, each starting where
+ * the one before ends. A repeated parameter, or 0 or 1, gives a part that is
+ * a single point.
+ */
+export function splitCurve(curve: Curve, ts: readonly number[]): Segment[];
+export function splitCurve(curve: Curve, t: number | readonly number[]): Segment[] {
+	let rest = controlPoints(curve);
+	const ts = (typeof t === 'number' ? [t] : [...t]).map(checkT).sort((a, b) => a - b);
+	const parts: Point[][] = [];
+	let last = 0;
+	for (const ti of ts) {
+		// What is left of the curve runs from `last` to 1: ti on it.
+		const [before, after] = splitPoints(rest, last < 1 ? (ti - last) / (1 - last) : 0);
+		parts.push(before);
+		rest = after;
+		last = ti;
+	}
+	parts.push(rest);
+	return parts.map(toSegment);
 }

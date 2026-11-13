@@ -4,10 +4,12 @@
 export type { PathCommand, Point, Segment } from './path.js';
 export { segments } from './path.js';
 export { arcTo } from './arc.js';
-export { curvePoint, curveTangent, type Curve } from './curve.js';
+export { curvePoint, curveTangent, splitCurve, type Curve } from './curve.js';
 export {
 	measure,
+	measureCurve,
 	pointsAlong,
+	type CurveMeasure,
 	type MeasureOptions,
 	type PathMeasure,
 	type PathPoint,

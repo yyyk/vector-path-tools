@@ -6,7 +6,7 @@
 		<title>vector-path-tools</title>
 		<meta
 			name="description"
-			content="Geometry for vector paths: exact bounds, hit testing, lengths and points along paths, offset curves, flattening within a tolerance, cubic-to-quadratic conversion and SVG arcs. Pure TypeScript."
+			content="Geometry for vector paths: exact bounds, hit testing, lengths and points along paths, splitting and offsetting curves, flattening within a tolerance, cubic-to-quadratic conversion and SVG arcs. Pure TypeScript."
 		/>
 		<script type="module" src="/src/overview.ts"></script>
 	</head>
@@ -15,9 +15,9 @@
 			<h1>vector-path-tools</h1>
 			<p class="lead">
 				Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
-				exact bounding boxes, hit testing, lengths and points along paths, offset
-				curves, flattening curves into lines within a tolerance, converting cubics to
-				quadratics, and SVG arcs as cubics. Pure TypeScript, no dependencies.
+				exact bounding boxes, hit testing, lengths and points along paths, splitting and
+				offsetting curves, flattening curves into lines within a tolerance, converting
+				cubics to quadratics, and SVG arcs as cubics. Pure TypeScript, no dependencies.
 			</p>
 			<pre><code class="language-sh">npm install vector-path-tools</code></pre>
 			<pre><code class="language-ts">import { arcTo, bounds, contains, flatten, toQuadratics } from 'vector-path-tools';
@@ -62,7 +62,7 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 				One curve's point at its parameter <code>t</code>, and its derivative there: the
 				direction it runs, with its speed as the length. Equal steps in
 				<code>t</code> aren't equal distances along the curve; for those, use
-				<code>measure</code>.
+				<code>measureCurve</code> (below) or <code>measure</code>.
 			</p>
 			<div class="demo">
 				<form class="controls" id="curve-form">
@@ -86,6 +86,49 @@ const halfCircle = [{ type: 'moveTo', x: 0, y: 0 }, ...arcTo(0, 0, 50, 50, 0, fa
 				</form>
 				<canvas id="curve"></canvas>
 				<p class="caption" id="curve-info"></p>
+			</div>
+
+			<h2><code>splitCurve(curve, t)</code> and <code>measureCurve(curve)</code></h2>
+			<p>
+				One curve split at its parameter <code>t</code>, or at each of an array of them,
+				as segments of the same kind that together draw exactly the curve (de
+				Casteljau's construction). <code>measureCurve</code> measures one curve once,
+				for its length and its parameter at a distance along it, to split it at
+				distances instead.
+			</p>
+			<pre><code class="language-ts">const [before, after] = splitCurve(curve, 0.5);
+
+const m = measureCurve(curve);
+splitCurve(curve, [10, 20, 30].map(m.tAtLength)); // at 10, 20 and 30 along</code></pre>
+			<div class="demo">
+				<form class="controls" id="split-form">
+					<label
+						>curve
+						<select name="curve">
+							<option value="cubic">cubic</option>
+							<option value="quad">quadratic</option>
+						</select></label
+					>
+					<label
+						>split at equal
+						<select name="by">
+							<option value="t">steps in t</option>
+							<option value="length">lengths</option>
+						</select></label
+					>
+					<label
+						>parts
+						<input
+							type="range"
+							name="parts"
+							min="2"
+							max="8"
+							step="1"
+							value="4" /><output for="parts"></output
+					></label>
+				</form>
+				<canvas id="split"></canvas>
+				<p class="caption" id="split-info"></p>
 			</div>
 
 			<h2><code>offsetCurve(curve, distance, options?)</code></h2>

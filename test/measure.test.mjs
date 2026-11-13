@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { measure, pointsAlong } from '../dist/index.js';
+import { curvePoint, measure, measureCurve, pointsAlong, splitCurve } from '../dist/index.js';
 
 const M = (x, y) => ({ type: 'moveTo', x, y });
 const L = (x, y) => ({ type: 'lineTo', x, y });
 const Q = (cx, cy, x, y) => ({ type: 'quadTo', cx, cy, x, y });
 const C = (c1x, c1y, c2x, c2y, x, y) => ({ type: 'cubicTo', c1x, c1y, c2x, c2y, x, y });
 const Z = { type: 'close' };
+const P = (x, y) => ({ x, y });
 const square = [M(0, 0), L(10, 0), L(10, 10), L(0, 10), Z];
 const near = (a, b, eps = 1e-12) => Math.abs(a - b) <= eps * Math.max(1, Math.abs(b));
 
@@ -144,4 +145,50 @@ test('invalid input', () => {
 	assert.throws(() => measure(square).pointAtLength(NaN), TypeError);
 	for (const spacing of [0, -1, NaN, Infinity])
 		assert.throws(() => pointsAlong(square, spacing), RangeError);
+});
+
+test('measureCurve: the length and points of measure, for one curve', () => {
+	const curves = [
+		[P(0, 0), P(30, 40)],
+		[P(0, 0), P(50, 100), P(100, 0)],
+		[P(0, 0), P(0, 100), P(100, 100), P(100, 0)],
+	];
+	for (const p of curves) {
+		const path = [
+			M(p[0].x, p[0].y),
+			[L, Q, C][p.length - 2](...p.slice(1).flatMap(q => [q.x, q.y])),
+		];
+		const pm = measure(path);
+		const m = measureCurve(p);
+		assert.equal(m.length, pm.length);
+		for (const f of [0, 0.1, 0.5, 0.77, 1]) {
+			const q = curvePoint(p, m.tAtLength(f * m.length));
+			const r = pm.pointAtFraction(f);
+			assert.ok(Math.hypot(q.x - r.x, q.y - r.y) <= 1e-9 * m.length);
+		}
+		// Clamped.
+		assert.equal(m.tAtLength(-5), 0);
+		assert.equal(m.tAtLength(Infinity), 1);
+	}
+	assert.equal(measureCurve([P(0, 0), P(30, 40)]).tAtLength(25), 0.5);
+});
+
+test('measureCurve and splitCurve: parts of the lengths asked for', () => {
+	const p = [P(0, 0), P(0, 100), P(100, 100), P(100, 0)];
+	const m = measureCurve(p);
+	const distances = [10, 50, 120];
+	const parts = splitCurve(p, distances.map(m.tAtLength));
+	const lengths = parts.map(s => measureCurve(s).length);
+	const expected = [10, 40, 70, m.length - 120];
+	lengths.forEach((l, i) => assert.ok(near(l, expected[i], 1e-9)));
+});
+
+test('measureCurve: invalid input', () => {
+	assert.throws(() => measureCurve([P(0, 0)]), TypeError);
+	assert.throws(() => measureCurve([P(0, 0), P(1, 1)], { tolerance: 0 }), RangeError);
+	assert.throws(() => measureCurve([P(0, 0), P(1, 1)]).tAtLength(NaN), TypeError);
+	// A curve that stays at one point.
+	const m = measureCurve([P(3, 3), P(3, 3), P(3, 3)]);
+	assert.equal(m.length, 0);
+	assert.equal(m.tAtLength(1), 1);
 });

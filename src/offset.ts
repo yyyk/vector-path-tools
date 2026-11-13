@@ -20,6 +20,7 @@
 
 import { controlPoints, type Curve } from './curve.js';
 import type { Point, Segment } from './path.js';
+import { splitCubicBezier, splitQuadraticBezier } from './stroke-outline/bezier.js';
 import * as so from './stroke-outline/offset.js';
 
 export interface OffsetOptions {
@@ -50,13 +51,13 @@ function quadraticOffset(
 		...so.foldPoints(curve, distance),
 	]);
 	const result: Quad[] = [];
-	for (const part of so.splitCurveAtTs(curve, ts, so.splitQuadraticBezier))
+	for (const part of so.splitCurveAtTs(curve, ts, splitQuadraticBezier))
 		so.offsetUntilAccurate(
 			part,
 			distance,
 			tolerance,
 			result,
-			so.splitQuadraticBezier,
+			splitQuadraticBezier,
 			c => so.isQuadraticSimple(...c),
 			c => so.isQuadraticTooSmallToSubdivide(c, size),
 			c => so.offsetQuadratic(...c, distance, size),
@@ -82,13 +83,13 @@ function cubicOffset(
 		...so.foldPoints(curve, distance),
 	]);
 	const result: Cubic[] = [];
-	for (const part of so.splitCurveAtTs(curve, ts, so.splitCubicBezier))
+	for (const part of so.splitCurveAtTs(curve, ts, splitCubicBezier))
 		so.offsetUntilAccurate(
 			part,
 			distance,
 			tolerance,
 			result,
-			so.splitCubicBezier,
+			splitCubicBezier,
 			c => so.isCubicSimple(...c),
 			c => so.isCubicTooSmallToSubdivide(c, size),
 			c => so.offsetCubic(...c, distance, size),
