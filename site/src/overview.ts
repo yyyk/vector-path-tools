@@ -9,7 +9,7 @@ import {
 	pointsAlong,
 	toQuadratics,
 	type ContainsMethod,
-	type Point,
+	type Curve,
 	type FillRule,
 	type FlattenMethod,
 	type ToQuadraticsMethod,
@@ -323,15 +323,21 @@ bind(measureForm, () => measureEditor.redraw());
 const curveForm = $<HTMLFormElement>('curve-form');
 const curveEditor = new PathEditor(view($('curve'), W, H), PRESETS.hook, e => {
 	const t = Number(value(curveForm, 't'));
-	const c = e.commands.find(c => c.type === 'cubicTo');
-	const start = e.commands[0];
-	if (!c || start.type !== 'moveTo') return;
-	const curve = [
-		{ x: start.x, y: start.y },
-		{ x: c.c1x, y: c.c1y },
-		{ x: c.c2x, y: c.c2y },
-		{ x: c.x, y: c.y },
-	] as [Point, Point, Point, Point];
+	const [start, c] = e.commands;
+	if (start?.type !== 'moveTo' || (c?.type !== 'cubicTo' && c?.type !== 'quadTo')) return;
+	const curve: Curve =
+		c.type === 'cubicTo'
+			? [
+					{ x: start.x, y: start.y },
+					{ x: c.c1x, y: c.c1y },
+					{ x: c.c2x, y: c.c2y },
+					{ x: c.x, y: c.y },
+				]
+			: [
+					{ x: start.x, y: start.y },
+					{ x: c.cx, y: c.cy },
+					{ x: c.x, y: c.y },
+				];
 	strokePath(e.v, e.commands, css('--input'), 1.5);
 	const { ctx } = e.v;
 	// Equal steps in t: dots crowd where the curve is slow.
@@ -374,7 +380,13 @@ const curveEditor = new PathEditor(view($('curve'), W, H), PRESETS.hook, e => {
 		`curveTangent(curve, ${t}) = { x: ${d.x.toFixed(1)}, y: ${d.y.toFixed(1)} } (speed ${len.toFixed(1)}, drawn at a third). ` +
 		'Green: t = 0, 0.05 … 1, crowding where the curve is slow.';
 });
-bind(curveForm, () => curveEditor.redraw());
+let lastPointCurve = 'cubic';
+bind(curveForm, () => {
+	const curve = value(curveForm, 'curve');
+	if (curve === lastPointCurve) return curveEditor.redraw();
+	lastPointCurve = curve;
+	curveEditor.set(curve === 'quad' ? PRESETS.hookQuad : PRESETS.hook);
+});
 
 // ---------- offsetCurve ----------
 const offsetForm = $<HTMLFormElement>('offset-form');
@@ -382,34 +394,51 @@ const offsetEditor = new PathEditor(view($('offset'), W, H), PRESETS.hook, e => 
 	const distance = Number(value(offsetForm, 'distance'));
 	const tolerance = Number(value(offsetForm, 'tolerance'));
 	showTolerance(offsetForm, tolerance, 0.25);
-	const c = e.commands.find(c => c.type === 'cubicTo');
-	const start = e.commands[0];
-	if (!c || start.type !== 'moveTo') return;
-	const curve = [
-		{ x: start.x, y: start.y },
-		{ x: c.c1x, y: c.c1y },
-		{ x: c.c2x, y: c.c2y },
-		{ x: c.x, y: c.y },
-	] as [Point, Point, Point, Point];
+	const [start, c] = e.commands;
+	if (start?.type !== 'moveTo' || (c?.type !== 'cubicTo' && c?.type !== 'quadTo')) return;
+	const curve: Curve =
+		c.type === 'cubicTo'
+			? [
+					{ x: start.x, y: start.y },
+					{ x: c.c1x, y: c.c1y },
+					{ x: c.c2x, y: c.c2y },
+					{ x: c.x, y: c.y },
+				]
+			: [
+					{ x: start.x, y: start.y },
+					{ x: c.cx, y: c.cy },
+					{ x: c.x, y: c.y },
+				];
 	const { ctx } = e.v;
 	strokePath(e.v, e.commands, css('--input'), 1.5);
 	// The segments, in alternating colors, joined at the dots.
 	const segs = offsetCurve(curve, distance, { tolerance });
 	segs.forEach((s, i) => {
-		const [a, b, cc, d] =
-			s.type === 'cubic' ? [s.p0, s.p1, s.p2, s.p3] : [s.p0, s.p0, s.p0, s.p0];
+		const end = s.type === 'line' ? s.p1 : s.type === 'quad' ? s.p2 : s.p3;
 		strokePath(
 			e.v,
 			[
-				{ type: 'moveTo', x: a.x, y: a.y },
-				{ type: 'cubicTo', c1x: b.x, c1y: b.y, c2x: cc.x, c2y: cc.y, x: d.x, y: d.y },
+				{ type: 'moveTo', x: s.p0.x, y: s.p0.y },
+				s.type === 'cubic'
+					? {
+							type: 'cubicTo',
+							c1x: s.p1.x,
+							c1y: s.p1.y,
+							c2x: s.p2.x,
+							c2y: s.p2.y,
+							x: s.p3.x,
+							y: s.p3.y,
+						}
+					: s.type === 'quad'
+						? { type: 'quadTo', cx: s.p1.x, cy: s.p1.y, x: s.p2.x, y: s.p2.y }
+						: { type: 'lineTo', x: s.p1.x, y: s.p1.y },
 			],
 			i % 2 ? css('--accent') : css('--good'),
 			2.5,
 		);
 		ctx.fillStyle = css('--fg');
 		ctx.beginPath();
-		ctx.arc(d.x, d.y, 3, 0, 2 * Math.PI);
+		ctx.arc(end.x, end.y, 3, 0, 2 * Math.PI);
 		ctx.fill();
 	});
 	// The exact offset on top, dashed; and whether it folds: where d times the
@@ -440,10 +469,16 @@ const offsetEditor = new PathEditor(view($('offset'), W, H), PRESETS.hook, e => 
 	e.drawHandles();
 	const options = tolerance === 0.25 ? '' : `, { tolerance: ${tolerance} }`;
 	$('offset-info').textContent =
-		`offsetCurve(curve, ${distance}${options}): ${segs.length} cubic${segs.length === 1 ? '' : 's'} ` +
+		`offsetCurve(curve, ${distance}${options}): ${segs.length} ${c.type === 'cubicTo' ? 'cubic' : 'quadratic'}${segs.length === 1 ? '' : 's'} ` +
 		'(alternating colors, joined at the dots), within the tolerance of the exact offset (dashed).' +
 		(folds
 			? ' Here the distance exceeds the radius of curvature: the exact offset turns back on itself at a cusp, and the segments follow it.'
 			: '');
 });
-bind(offsetForm, () => offsetEditor.redraw());
+let lastOffsetCurve = 'cubic';
+bind(offsetForm, () => {
+	const curve = value(offsetForm, 'curve');
+	if (curve === lastOffsetCurve) return offsetEditor.redraw();
+	lastOffsetCurve = curve;
+	offsetEditor.set(curve === 'quad' ? PRESETS.hookQuad : PRESETS.hook);
+});
