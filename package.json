@@ -1,6 +1,6 @@
 {
   "name": "vector-path-tools",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Geometry for vector paths (lines, quadratic and cubic Béziers): exact bounds, point containment, lengths and points along paths, splitting and offsetting curves, flattening to lines within a tolerance, curve conversion, and SVG arcs. Pure TypeScript, no dependencies.",
   "author": "yyyk",
   "keywords": [
@@ -32,10 +32,12 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
+    "src",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
@@ -46,7 +48,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
     "test": "npm run build && node --test test/*.test.mjs",
     "format": "prettier --write \"**/*.{ts,mjs,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,mjs,json,md}\"",

@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 [Semantic Versioning](https://semver.org/) (while the version is 0.x, minor
 versions may change the API).
 
+## [0.1.1] - 2026-11-16
+
+### Changed
+
+- The package now includes declaration maps and the TypeScript source, so "go
+  to definition" in an editor opens the source instead of the `.d.ts` files.
+- `vector-path-tools/package.json` is exported, for tools that read it.
+
 ## [0.1.0] - 2026-11-16
 
 First release.
@@ -54,4 +62,5 @@ First release.
   passed in directly. Invalid input (no leading `moveTo`, unknown commands, NaN or
   infinite coordinates) is a `TypeError`.
 
+[0.1.1]: https://github.com/yyyk/vector-path-tools/releases/tag/v0.1.1
 [0.1.0]: https://github.com/yyyk/vector-path-tools/releases/tag/v0.1.0
