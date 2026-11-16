@@ -2,6 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/vector-path-tools)](https://www.npmjs.com/package/vector-path-tools)
 [![CI](https://github.com/yyyk/vector-path-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/yyyk/vector-path-tools/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
 exact bounding boxes, hit testing, lengths and points along paths, splitting
