@@ -168,6 +168,11 @@ export class PathEditor {
 			this.changed();
 		});
 		v.canvas.addEventListener('pointerup', () => (this.dragging = []));
+		// Colours are read from CSS when drawing, so redraw when the system switches
+		// between light and dark.
+		matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () =>
+				this.redraw(),
+		);
 		this.redraw();
 	}
 

@@ -253,4 +253,7 @@ $('random').addEventListener('click', () => {
 	points = [r(), r(), r(), r()];
 	render();
 });
+// Colours are read from CSS when drawing, so redraw when the system switches
+// between light and dark.
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
 render();
