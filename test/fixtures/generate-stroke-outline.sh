@@ -5,11 +5,17 @@
 # 084fd2ca8eb0065951b240a917df5d8d2e616bfd (its arc length code is the same as
 # at 16aa4a004971b38280c3dfd9b256724fcb85969e, which
 # src/stroke-outline/arc-length.ts cites). Compiled with -ffp-contract=off, so
-# that no multiply and add are fused, as in JavaScript.
-#   sh test/fixtures/generate-stroke-outline.sh /path/to/stroke-outline > test/fixtures/stroke-outline.json
+# that no multiply and add are fused, as in JavaScript. Without a path, clones
+# stroke-outline at that commit into test/fixtures/.cache/stroke-outline.
+#   sh test/fixtures/generate-stroke-outline.sh [/path/to/stroke-outline] > test/fixtures/stroke-outline.json
 set -e
-so=$(cd "$1" && pwd)
 here=$(cd "$(dirname "$0")" && pwd)
+if [ -n "$1" ]; then
+  so=$(cd "$1" && pwd)
+else
+  . "$here/checkout.sh"
+  so=$(checkout stroke-outline https://github.com/yyyk/stroke-outline.git 084fd2ca8eb0065951b240a917df5d8d2e616bfd)
+fi
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 # The library's sources, but the two that main.cpp includes.

@@ -1,12 +1,15 @@
 # Generates cu2qu.json: fontTools' curve_to_quadratic on random cubics, the
 # reference the port in src/fonttools/cu2qu.ts must match bit for bit.
-#   python3 test/fixtures/generate-cu2qu.py /path/to/fonttools > test/fixtures/cu2qu.json
+# Uses fontTools from requirements.txt.
+#   python3 test/fixtures/generate-cu2qu.py > test/fixtures/cu2qu.json
 import json
 import random
 import sys
 
-sys.path.insert(0, sys.argv[1] + "/Lib")
 from fontTools.cu2qu import curve_to_quadratic
+from fontTools.cu2qu.cu2qu import COMPILED
+
+assert not COMPILED, "fontTools is compiled with Cython; see requirements.txt"
 
 random.seed(7)
 cases = []

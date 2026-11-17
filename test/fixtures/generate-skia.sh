@@ -3,10 +3,19 @@
 # inputs (see skia-gen/main.cpp), for comparing with the ports in src/skia.
 # Expects a Skia checkout with its dependencies synced (python3
 # tools/git-sync-deps, python3 bin/fetch-ninja); builds into its out/ folder.
-#   sh test/fixtures/generate-skia.sh /path/to/skia > test/fixtures/skia.json
+# Without a path, clones Skia at commit 50ba8e6d82572c55b146d8c802fe1fc14d47ca1c
+# into test/fixtures/.cache/skia and syncs its dependencies.
+#   sh test/fixtures/generate-skia.sh [/path/to/skia] > test/fixtures/skia.json
 set -e
-skia=$(cd "$1" && pwd)
 here=$(cd "$(dirname "$0")" && pwd)
+if [ -n "$1" ]; then
+  skia=$(cd "$1" && pwd)
+else
+  . "$here/checkout.sh"
+  skia=$(checkout skia https://skia.googlesource.com/skia.git 50ba8e6d82572c55b146d8c802fe1fc14d47ca1c)
+  [ -x "$skia/third_party/ninja/ninja" ] ||
+    (cd "$skia" && GIT_SYNC_DEPS_SKIP_EMSDK=1 python3 tools/git-sync-deps && python3 bin/fetch-ninja) >&2
+fi
 out="$skia/out/vector-path-tools"
 
 # Only the core library: no GPU backends, PDF, fonts' shaping or ICU.

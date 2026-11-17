@@ -339,12 +339,8 @@ cd site && npm install && npm run dev   # docs site
 ```
 
 The reference outputs in `test/fixtures` are generated from the
-originals; each generator's header says how to run it (fontTools with Python,
-kurbo with Rust, bezier-utils with Java, Skia and stroke-outline with C++,
-svg-arc-to-cubic-bezier with Node). After `npm run build`,
-`node test/fixtures/measure-arclen.mjs` measures the arc-length code against
-kurbo and Skia, and `node test/fixtures/measure-offset.mjs` the offsets against
-the exact offset and kurbo's.
+originals; [test/fixtures/README.md](test/fixtures/README.md) says how to
+regenerate them and measure against them.
 
 ## License
 

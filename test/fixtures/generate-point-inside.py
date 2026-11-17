@@ -2,13 +2,16 @@
 # lines, quadratics and cubics (some subpaths closed, some left open), at
 # random points and at every on-curve point, under both fill rules: the
 # reference the port in src/fonttools/point-inside-pen.ts must match.
-#   python3 test/fixtures/generate-point-inside.py /path/to/fonttools > test/fixtures/point-inside.json
+# Uses fontTools from requirements.txt.
+#   python3 test/fixtures/generate-point-inside.py > test/fixtures/point-inside.json
 import json
 import random
 import sys
 
-sys.path.insert(0, sys.argv[1] + "/Lib")
+from fontTools.misc.bezierTools import COMPILED
 from fontTools.pens.pointInsidePen import PointInsidePen
+
+assert not COMPILED, "fontTools is compiled with Cython; see requirements.txt"
 
 random.seed(11)
 

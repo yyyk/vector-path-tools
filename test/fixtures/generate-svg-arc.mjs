@@ -1,12 +1,8 @@
 // Generates svg-arc.json: svg-arc-to-cubic-bezier's own output on random arcs,
 // the reference the port in src/svg-arc-to-cubic-bezier must match bit for bit.
-//   node test/fixtures/generate-svg-arc.mjs /path/to/svg-arc-to-cubic-bezier > test/fixtures/svg-arc.json
-import { pathToFileURL } from 'node:url';
-import { resolve } from 'node:path';
-
-const { default: arcToBezier } = await import(
-	pathToFileURL(resolve(process.argv[2], 'src/index.js')).href
-);
+// Uses the devDependency's src/index.js, the same as at the commit the port cites.
+//   node test/fixtures/generate-svg-arc.mjs > test/fixtures/svg-arc.json
+import arcToBezier from 'svg-arc-to-cubic-bezier/src/index.js';
 
 // xorshift-style generator, so the cases are the same on every run.
 let s = 7n;

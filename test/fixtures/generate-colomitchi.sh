@@ -2,11 +2,17 @@
 # Generates colomitchi.json: Adrian Colomitchi's bezier-utils (BezierUtils.java,
 # from bezier-utils-src.jar on caffeineowl.com) with the three fixes described in
 # src/caffeineowl/bezier-utils.ts, the reference the port must match bit for bit.
-#   sh test/fixtures/generate-colomitchi.sh /path/to/extracted/bezier-utils-src > test/fixtures/colomitchi.json
+# Without a path, uses colomitchi-gen/bezier-utils-src.zip (the jar's sources),
+# extracted into test/fixtures/.cache/bezier-utils-src the first time.
+#   sh test/fixtures/generate-colomitchi.sh [/path/to/extracted/bezier-utils-src] > test/fixtures/colomitchi.json
 # Uses JAVA_HOME's javac and java if set, else the ones on PATH.
 set -e
-src=$1
 here=$(cd "$(dirname "$0")" && pwd)
+src=${1:-$here/.cache/bezier-utils-src}
+if [ -z "$1" ] && [ ! -d "$src" ]; then
+  mkdir -p "$here/.cache"
+  unzip -q "$here/colomitchi-gen/bezier-utils-src.zip" -d "$here/.cache"
+fi
 bin=${JAVA_HOME:+$JAVA_HOME/bin/}
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT

@@ -4,3 +4,4 @@ site/dist/
 *.tgz
 .DS_Store
 test/fixtures/kurbo-gen/target/
+test/fixtures/.cache/

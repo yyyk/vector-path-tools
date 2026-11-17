@@ -1,0 +1,5 @@
+# fontTools for generate-cu2qu.py and generate-point-inside.py, built from
+# source without Cython so that the pure Python code runs:
+#   FONTTOOLS_WITH_CYTHON=0 python3 -m pip install -r test/fixtures/requirements.txt
+--no-binary fonttools
+fonttools==4.68.0
