@@ -5,6 +5,19 @@ All notable changes to this project are documented here. The format follows
 [Semantic Versioning](https://semver.org/) (while the version is 0.x, minor
 versions may change the API).
 
+## [0.1.2] - 2026-11-18
+
+### Added
+
+- `subpaths(path)`: the path split into its subpaths that draw something, each
+  as its own path, keeping its `close`. The same subpaths `measure` counts.
+- `splitPath(path, distances, options?)`: the path cut at distances along it,
+  as pieces. A closed subpath's last piece runs across its start to the first
+  cut; cuts at an open subpath's ends, cuts within the measuring tolerance of
+  each other, and cuts on subpaths of length 0 are dropped.
+- `area(path)`: the exact signed area, every subpath counting as closed;
+  positive clockwise on screen (y down).
+
 ## [0.1.1] - 2026-11-16
 
 ### Changed
@@ -62,5 +75,6 @@ First release.
   passed in directly. Invalid input (no leading `moveTo`, unknown commands, NaN or
   infinite coordinates) is a `TypeError`.
 
+[0.1.2]: https://github.com/yyyk/vector-path-tools/releases/tag/v0.1.2
 [0.1.1]: https://github.com/yyyk/vector-path-tools/releases/tag/v0.1.1
 [0.1.0]: https://github.com/yyyk/vector-path-tools/releases/tag/v0.1.0

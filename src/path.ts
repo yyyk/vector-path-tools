@@ -111,3 +111,110 @@ export function* eachSegment(commands: Iterable<PathCommand>): Generator<Segment
 		}
 	}
 }
+
+/** One subpath that draws something: its commands, segments, and whether it is closed. */
+export interface SubpathParts {
+	commands: PathCommand[];
+	segments: Segment[];
+	closed: boolean;
+}
+
+/** The command with only its coordinates, as a new object. */
+function copyCommand(c: PathCommand): PathCommand {
+	switch (c.type) {
+		case 'moveTo':
+			return { type: 'moveTo', x: c.x, y: c.y };
+		case 'lineTo':
+			return { type: 'lineTo', x: c.x, y: c.y };
+		case 'quadTo':
+			return { type: 'quadTo', cx: c.cx, cy: c.cy, x: c.x, y: c.y };
+		case 'cubicTo':
+			return {
+				type: 'cubicTo',
+				c1x: c.c1x,
+				c1y: c.c1y,
+				c2x: c.c2x,
+				c2y: c.c2y,
+				x: c.x,
+				y: c.y,
+			};
+		case 'close':
+			return { type: 'close' };
+	}
+}
+
+/**
+ * The path's subpaths that draw something, with their segments as
+ * {@link segments} gives them. A subpath ends at a `moveTo` or a `close`;
+ * drawing after a `close` starts a new one at the same start. `measure` and
+ * {@link subpaths} both split here, so they always agree.
+ */
+export function splitSubpaths(commands: Iterable<PathCommand>): SubpathParts[] {
+	const out: SubpathParts[] = [];
+	let current: SubpathParts | null = null;
+	let start: Point | null = null;
+	let last: Point | null = null;
+	const add = (c: PathCommand, seg: Segment) => {
+		if (!current) {
+			current = {
+				commands: [{ type: 'moveTo', x: start!.x, y: start!.y }],
+				segments: [],
+				closed: false,
+			};
+			out.push(current);
+		}
+		current.commands.push(c);
+		current.segments.push(seg);
+	};
+	for (const c of commands) {
+		checkFinite(c);
+		if (c.type === 'moveTo') {
+			start = last = { x: c.x, y: c.y };
+			current = null;
+			continue;
+		}
+		if (!start || !last)
+			throw new TypeError(`path data must start with a moveTo (got ${c.type})`);
+		if (c.type === 'close') {
+			// With nothing drawn since the start, there is no close line either.
+			if (current) {
+				if (last.x !== start.x || last.y !== start.y)
+					(current as SubpathParts).segments.push({
+						type: 'line',
+						p0: last,
+						p1: start,
+					});
+				(current as SubpathParts).commands.push({ type: 'close' });
+				(current as SubpathParts).closed = true;
+			}
+			// After a close, drawing starts a new subpath at the same start.
+			last = start;
+			current = null;
+			continue;
+		}
+		const end = { x: c.x, y: c.y };
+		if (c.type === 'lineTo') add(copyCommand(c), { type: 'line', p0: last, p1: end });
+		else if (c.type === 'quadTo')
+			add(copyCommand(c), { type: 'quad', p0: last, p1: { x: c.cx, y: c.cy }, p2: end });
+		else
+			add(copyCommand(c), {
+				type: 'cubic',
+				p0: last,
+				p1: { x: c.c1x, y: c.c1y },
+				p2: { x: c.c2x, y: c.c2y },
+				p3: end,
+			});
+		last = end;
+	}
+	return out;
+}
+
+/**
+ * The path split into its subpaths, each as its own path starting with a
+ * `moveTo` and keeping its `close`. Only subpaths that draw something are
+ * included, the same ones `measure` counts in `subpathLengths`; a `moveTo` with
+ * nothing drawn after it is dropped.
+ */
+export function subpaths(commands: Iterable<PathCommand>): PathCommand[][] {
+	return splitSubpaths(commands).map(s => s.commands);
+}

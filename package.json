@@ -1,6 +1,6 @@
 {
   "name": "vector-path-tools",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Geometry for vector paths (lines, quadratic and cubic Béziers): exact bounds, point containment, lengths and points along paths, splitting and offsetting curves, flattening to lines within a tolerance, curve conversion, and SVG arcs. Pure TypeScript, no dependencies.",
   "author": "yyyk",
   "keywords": [

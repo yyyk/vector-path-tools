@@ -2,13 +2,15 @@
 // cubic Bézier curves. Every function takes path commands in absolute
 // coordinates.
 export type { PathCommand, Point, Segment } from './path.js';
-export { segments } from './path.js';
+export { segments, subpaths } from './path.js';
+export { area } from './area.js';
 export { arcTo } from './arc.js';
 export { curvePoint, curveTangent, splitCurve, type Curve } from './curve.js';
 export {
 	measure,
 	measureCurve,
 	pointsAlong,
+	splitPath,
 	type CurveMeasure,
 	type MeasureOptions,
 	type PathMeasure,

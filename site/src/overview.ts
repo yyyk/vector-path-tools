@@ -1,4 +1,5 @@
 import {
+	area,
 	bounds,
 	contains,
 	curvePoint,
@@ -9,6 +10,8 @@ import {
 	offsetCurve,
 	pointsAlong,
 	splitCurve,
+	splitPath,
+	subpaths,
 	toQuadratics,
 	type ContainsMethod,
 	type FillRule,
@@ -213,7 +216,10 @@ const containsEditor = new PathEditor(view($('contains'), W, H), glyph('opposite
 	e.v.ctx.globalAlpha = 1;
 	strokePath(e.v, e.commands, css('--fg'), 1.5);
 	e.drawHandles();
-	let text = `${inside} of ${total} grid points inside.`;
+	const areas = subpaths(e.commands)
+		.map(sub => area(sub).toFixed(0))
+		.join(', ');
+	let text = `${inside} of ${total} grid points inside. subpaths(path).map(area) = [${areas}].`;
 	if (pointer) {
 		const hit = contains(e.commands, pointer.x, pointer.y, options);
 		e.v.ctx.beginPath();
@@ -370,6 +376,36 @@ const measureEditor = new PathEditor(view($('measure'), W, H), PRESETS.glyph, e 
 		`Green: pointsAlong(path, ${spacing}), ${n} points.`;
 });
 bind(measureForm, () => measureEditor.redraw());
+
+// ---------- splitPath ----------
+const splitPathForm = $<HTMLFormElement>('split-path-form');
+const splitPathEditor = new PathEditor(view($('split-path'), W, H), PRESETS.glyph, e => {
+	const spacing = Number(value(splitPathForm, 'spacing'));
+	const { length } = measure(e.commands);
+	const distances: number[] = [];
+	for (let d = spacing; d < length; d += spacing) distances.push(d);
+	const pieces = splitPath(e.commands, distances);
+	// The pieces in alternating colors, a dot where each starts.
+	const colors = [css('--accent'), css('--good')];
+	pieces.forEach((piece, i) => strokePath(e.v, piece, colors[i % 2], 3));
+	const { ctx } = e.v;
+	ctx.save();
+	ctx.fillStyle = css('--fg');
+	for (const [start] of pieces) {
+		if (start.type !== 'moveTo') continue;
+		ctx.beginPath();
+		ctx.arc(start.x, start.y, 3.5, 0, 2 * Math.PI);
+		ctx.fill();
+	}
+	ctx.restore();
+	e.drawHandles();
+	const shown = distances.length > 3 ? `${spacing}, ${2 * spacing}, …` : distances.join(', ');
+	$('split-path-info').textContent =
+		`splitPath(path, [${shown}]): ${pieces.length} piece${pieces.length === 1 ? '' : 's'} ` +
+		`(alternating colors, a dot where each starts) from ${distances.length} cut${distances.length === 1 ? '' : 's'} ` +
+		`along ${length.toFixed(0)}. Each closed subpath gives as many pieces as it has cuts, the last across its start.`;
+});
+bind(splitPathForm, () => splitPathEditor.redraw());
 
 // ---------- curvePoint / curveTangent ----------
 const curveForm = $<HTMLFormElement>('curve-form');

@@ -221,6 +221,34 @@ pointsAlong(path, 20); // [[{ x, y, angle }, ...], ...]: one array per subpath</
 				<p class="caption" id="measure-info"></p>
 			</div>
 
+			<h2><code>splitPath(path, distances, options?)</code></h2>
+			<p>
+				The path cut at distances along it, as pieces that are paths of their own.
+				Distances run on across subpaths as in <code>measure</code>, but pieces never
+				cross a <code>moveTo</code>. On a closed subpath the last piece runs across the
+				start to the first cut, so n cuts give n pieces; on an open one, n + 1. Cuts
+				that would leave a piece of no length, at an open subpath's ends or within the
+				measuring tolerance of each other, are dropped.
+			</p>
+			<pre><code class="language-ts">const m = measure(path);
+splitPath(path, [m.length / 3, (2 * m.length) / 3]); // [[{ type: 'moveTo', ... }, ...], ...]</code></pre>
+			<div class="demo">
+				<form class="controls" id="split-path-form">
+					<label
+						>every
+						<input
+							type="range"
+							name="spacing"
+							min="10"
+							max="400"
+							step="1"
+							value="120" /><output for="spacing"></output
+					></label>
+				</form>
+				<canvas id="split-path"></canvas>
+				<p class="caption" id="split-path-info"></p>
+			</div>
+
 			<h2><code>bounds(path)</code></h2>
 			<p>
 				The exact bounding box of what the path draws: curves count by their extremes,
@@ -232,16 +260,24 @@ pointsAlong(path, 20); // [[{ x, y, angle }, ...], ...]: one array per subpath</
 				<p class="caption" id="bounds-info"></p>
 			</div>
 
-			<h2><code>contains(path, x, y, options?)</code></h2>
+			<h2>
+				<code>contains(path, x, y, options?)</code>, <code>area(path)</code> and
+				<code>subpaths(path)</code>
+			</h2>
 			<p>
 				Whether a point is inside the path's fill: Skia's
 				<code>SkPath::contains</code> (default) or fontTools'
 				<code>PointInsidePen</code>. The fill rule decides how nested subpaths combine:
 				under <code>'nonzero'</code>, a hole must wind the other way; under
-				<code>'evenodd'</code>, every nested loop is a hole.
+				<code>'evenodd'</code>, every nested loop is a hole. <code>area</code> is the
+				exact signed area, positive where a subpath runs clockwise on screen (y down);
+				taken per subpath, its sign shows which way each one winds.
 			</p>
 			<pre><code class="language-ts">contains(path, 50, 70); // true or false
-contains(path, 50, 70, { fillRule: 'evenodd', method: 'fonttools' });</code></pre>
+contains(path, 50, 70, { fillRule: 'evenodd', method: 'fonttools' });
+
+area(path); // every subpath's signed area added up
+subpaths(path).map(area); // each subpath's: > 0 clockwise on screen</code></pre>
 			<div class="demo">
 				<form class="controls" id="contains-form">
 					<label

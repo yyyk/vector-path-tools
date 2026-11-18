@@ -120,6 +120,18 @@ The drawn pieces of a path as `{ type: 'line' | 'quad' | 'cubic', p0, p1, ... }`
 with each one's start point made explicit and `close` turned into its closing
 line. For writing your own geometry on top.
 
+### `subpaths(path)`
+
+The path split into its subpaths, each as its own path: starting with a
+`moveTo` and keeping its `close`. Only subpaths that draw something are
+included, the same ones `measure` counts in `subpathLengths`, so a `moveTo` with
+nothing drawn after it is dropped. Drawing after a `close` starts a new subpath
+at the same start.
+
+```ts
+subpaths(path); // [[{ type: 'moveTo', ... }, ..., { type: 'close' }], ...]
+```
+
 ### `curvePoint(curve, t)` and `curveTangent(curve, t)`
 
 The point on one curve at its parameter `t` (0…1, clamped), and the curve's
@@ -223,11 +235,48 @@ array per subpath, as p5's `textToPoints` does for glyphs. Each subpath's
 spacing is adjusted slightly so its points are even and reach its end; a
 closed subpath doesn't repeat its start.
 
+### `splitPath(path, distances, options?)`
+
+The path cut at `distances` along it, as pieces that are paths of their own, in
+order. Distances run on across subpaths as in `measure` (a distance at a
+boundary falls at the end of the earlier subpath; outside 0…length, clamped),
+pieces never cross a `moveTo`, and subpaths that draw nothing are dropped.
+
+```ts
+const m = measure(path);
+splitPath(path, [m.length / 3, (2 * m.length) / 3]); // three pieces if it's open
+```
+
+Cuts that would leave a piece of no length are dropped. For a subpath of length
+L, with ε = `options.tolerance` · L (as `measure`'s, default 1e-10):
+
+- Open: cuts with ε < d < L − ε count. n cuts give n + 1 open pieces.
+- Closed: cuts with 0 ≤ d < L − ε count, and d ≥ L − ε is the same point as 0. No cuts leave the subpath unchanged and still closed; n ≥ 1 cuts give n
+  open pieces, the last running from the last cut, through the start, to the
+  first. A single cut opens it there.
+- A cut within ε of one already kept (in order along the subpath) is dropped.
+- A subpath of length 0 has no cuts.
+
+So computed distances that land a rounding error off an end, or off each
+other, don't leave slivers.
+
 ### `bounds(path)`
 
 The exact bounding box of what the path draws, `{ minX, minY, maxX, maxY }`, or
 `null` if it draws nothing. Curves count by their extremes, not their control
 points, and a `moveTo` with nothing drawn after it adds nothing.
+
+### `area(path)`
+
+The path's signed area, exactly for curves too (by Green's theorem, from their
+control points): every subpath's added up, each counting as closed. Positive
+where a subpath runs clockwise on screen, with y pointing down
+(counterclockwise with y up), so a hole running the other way subtracts. For
+the direction of each subpath, take the area of each:
+
+```ts
+subpaths(path).map(area); // > 0: clockwise on screen
+```
 
 ### `contains(path, x, y, options?)`
 
