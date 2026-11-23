@@ -75,7 +75,11 @@ function lineIntersection(p1: Point, p2: Point, p3: Point, p4: Point): Point | n
 
 const secondDifference = (p0: number, p1: number, p2: number) => p0 - 2.0 * p1 + p2;
 
-function findDerivativeExtremaForQuadratic(p0: number, p1: number, p2: number): number | null {
+export function findDerivativeExtremaForQuadratic(
+	p0: number,
+	p1: number,
+	p2: number,
+): number | null {
 	// The derivative is ∝ (p1 - p0) + t·(p0 - 2p1 + p2); compare its slope
 	// to the size of its terms, not to an absolute length.
 	const c = [secondDifference(p0, p1, p2), p0 - p1];
@@ -88,7 +92,7 @@ function findDerivativeExtremaForQuadratic(p0: number, p1: number, p2: number): 
 	return t;
 }
 
-function findDerivativeExtremaForCubic(
+export function findDerivativeExtremaForCubic(
 	p0: number,
 	p1: number,
 	p2: number,

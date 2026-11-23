@@ -10,26 +10,30 @@ Run everything from the repository root.
 
 ## Fixtures
 
-| Fixture               | Reference                                  | Generator                    | Tests                                         |
-| --------------------- | ------------------------------------------ | ---------------------------- | --------------------------------------------- |
-| `kurbo.json`          | kurbo, crates.io 0.13.1                    | `kurbo-gen`                  | `flatten.test.mjs`, `to-quadratics.test.mjs`  |
-| `arclen-kurbo.json`   | kurbo, crates.io 0.13.1                    | `kurbo-gen --bin arclen`     | `measure.test.mjs`                            |
-| `offset-kurbo.json`   | kurbo, crates.io 0.13.1                    | `kurbo-gen --bin offset`     | `measure-offset.mjs` only                     |
-| `skia.json`           | Skia at `50ba8e6d`                         | `generate-skia.sh`           | `contains.test.mjs`, `wangs-formula.test.mjs` |
-| `arclen-skia.json`    | Skia at `50ba8e6d`                         | `generate-skia-arclen.sh`    | `measure-arclen.mjs` only                     |
-| `stroke-outline.json` | stroke-outline at `084fd2ca`               | `generate-stroke-outline.sh` | `stroke-outline.test.mjs`                     |
-| `cu2qu.json`          | fontTools, PyPI 4.68.0                     | `generate-cu2qu.py`          | `to-quadratics.test.mjs`                      |
-| `point-inside.json`   | fontTools, PyPI 4.68.0                     | `generate-point-inside.py`   | `contains.test.mjs`                           |
-| `svg-arc.json`        | svg-arc-to-cubic-bezier, npm 3.2.0         | `generate-svg-arc.mjs`       | `arc.test.mjs`                                |
-| `colomitchi.json`     | bezier-utils (caffeineowl.com), with fixes | `generate-colomitchi.sh`     | `to-quadratics.test.mjs`                      |
-| `arclen-inputs.txt`   | —                                          | `generate-arclen-inputs.mjs` | input to the arclen generators                |
-| `offset-inputs.txt`   | —                                          | `generate-offset-inputs.mjs` | input to `kurbo-gen --bin offset`             |
+| Fixture               | Reference                                  | Generator                     | Tests                                           |
+| --------------------- | ------------------------------------------ | ----------------------------- | ----------------------------------------------- |
+| `kurbo.json`          | kurbo, crates.io 0.13.1                    | `kurbo-gen`                   | `flatten.test.mjs`, `to-quadratics.test.mjs`    |
+| `arclen-kurbo.json`   | kurbo, crates.io 0.13.1                    | `kurbo-gen --bin arclen`      | `measure.test.mjs`                              |
+| `offset-kurbo.json`   | kurbo, crates.io 0.13.1                    | `kurbo-gen --bin offset`      | `measure-offset.mjs` only                       |
+| `skia.json`           | Skia at `50ba8e6d`                         | `generate-skia.sh`            | `contains.test.mjs`, `wangs-formula.test.mjs`   |
+| `arclen-skia.json`    | Skia at `50ba8e6d`                         | `generate-skia-arclen.sh`     | `measure-arclen.mjs` only                       |
+| `stroke-outline.json` | stroke-outline at `084fd2ca`               | `generate-stroke-outline.sh`  | `stroke-outline.test.mjs`, `intersect.test.mjs` |
+| `pathops-skia.json`   | Skia at `50ba8e6d` (PathOps)               | `generate-skia-pathops.sh`    | `boolean-op-references.test.mjs`                |
+| `path-bool.json`      | path-bool, npm 1.0.4                       | `generate-path-bool.mjs`      | `boolean-op-references.test.mjs`                |
+| `cu2qu.json`          | fontTools, PyPI 4.68.0                     | `generate-cu2qu.py`           | `to-quadratics.test.mjs`                        |
+| `point-inside.json`   | fontTools, PyPI 4.68.0                     | `generate-point-inside.py`    | `contains.test.mjs`                             |
+| `svg-arc.json`        | svg-arc-to-cubic-bezier, npm 3.2.0         | `generate-svg-arc.mjs`        | `arc.test.mjs`                                  |
+| `colomitchi.json`     | bezier-utils (caffeineowl.com), with fixes | `generate-colomitchi.sh`      | `to-quadratics.test.mjs`                        |
+| `arclen-inputs.txt`   | —                                          | `generate-arclen-inputs.mjs`  | input to the arclen generators                  |
+| `offset-inputs.txt`   | —                                          | `generate-offset-inputs.mjs`  | input to `kurbo-gen --bin offset`               |
+| `boolean-inputs.txt`  | —                                          | `generate-boolean-inputs.mjs` | input to the boolean generators and their test  |
 
 ## Requirements
 
 Only for the generators you run:
 
-- Node, for the `.mjs` generators (`npm install` first, for svg-arc-to-cubic-bezier).
+- Node, for the `.mjs` generators (`npm install` first, for svg-arc-to-cubic-bezier
+  and path-bool).
 - Rust, for `kurbo-gen`. With Homebrew's rustup, `cargo` is in
   `$(brew --prefix rustup)/bin`, which has to be on your `PATH`.
 - Python 3, for fontTools, installed without Cython so that the pure Python code
@@ -50,9 +54,10 @@ cargo run --release --locked --manifest-path test/fixtures/kurbo-gen/Cargo.toml 
 cargo run --release --locked --manifest-path test/fixtures/kurbo-gen/Cargo.toml --bin arclen < test/fixtures/arclen-inputs.txt > test/fixtures/arclen-kurbo.json
 cargo run --release --locked --manifest-path test/fixtures/kurbo-gen/Cargo.toml --bin offset < test/fixtures/offset-inputs.txt > test/fixtures/offset-kurbo.json
 
-# Skia (generate-skia.sh first: generate-skia-arclen.sh uses its build)
+# Skia (generate-skia.sh first: the others use its build)
 sh test/fixtures/generate-skia.sh > test/fixtures/skia.json
 sh test/fixtures/generate-skia-arclen.sh < test/fixtures/arclen-inputs.txt > test/fixtures/arclen-skia.json
+sh test/fixtures/generate-skia-pathops.sh < test/fixtures/boolean-inputs.txt > test/fixtures/pathops-skia.json
 
 # stroke-outline
 sh test/fixtures/generate-stroke-outline.sh > test/fixtures/stroke-outline.json
@@ -64,12 +69,16 @@ python3 test/fixtures/generate-point-inside.py > test/fixtures/point-inside.json
 # svg-arc-to-cubic-bezier
 node test/fixtures/generate-svg-arc.mjs > test/fixtures/svg-arc.json
 
+# path-bool
+node test/fixtures/generate-path-bool.mjs < test/fixtures/boolean-inputs.txt > test/fixtures/path-bool.json
+
 # bezier-utils
 sh test/fixtures/generate-colomitchi.sh > test/fixtures/colomitchi.json
 
 # inputs
 node test/fixtures/generate-arclen-inputs.mjs > test/fixtures/arclen-inputs.txt
 node test/fixtures/generate-offset-inputs.mjs > test/fixtures/offset-inputs.txt
+node test/fixtures/generate-boolean-inputs.mjs > test/fixtures/boolean-inputs.txt
 ```
 
 The Skia and stroke-outline generators clone their pinned commit into
@@ -80,6 +89,12 @@ caffeineowl.com is only archived, so the sources of its bezier-utils-src.jar
 are committed as `colomitchi-gen/bezier-utils-src.zip` (MIT licensed);
 `generate-colomitchi.sh` extracts them into `test/fixtures/.cache/` the first
 time, or uses a folder given as the first argument.
+
+The boolean-operation references run on pairs of shapes, each with every
+operation. path-bool returns its contours in open pieces, so
+`generate-path-bool.mjs` joins them before saving, as the path-builder app
+does: `path-bool.json` is path-bool plus that joining. Skia and path-bool are
+only run to make fixtures: no code is copied from them.
 
 The generators are deterministic, so an unchanged reference gives the same
 values. `cu2qu.json` is committed pretty-printed, so compare its values rather

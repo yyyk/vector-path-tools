@@ -5,9 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
-exact bounding boxes, hit testing, lengths and points along paths, splitting
-and offsetting curves, flattening curves into lines within a tolerance, converting cubics to
-quadratics, and SVG arcs as cubics.
+exact bounding boxes, hit testing, boolean operations, lengths and points along
+paths, splitting and offsetting curves, flattening curves into lines within a
+tolerance, converting cubics to quadratics, and SVG arcs as cubics.
 
 Pure TypeScript, no dependencies, no WebAssembly. Works in browsers, workers
 and Node 20+.
@@ -295,6 +295,50 @@ belongs to exactly one of them. `'skia'` also counts points within 1/4096 of
 the curve (in path units) as on it, which shows at very small coordinate
 scales; `'fonttools'` has no such tolerance.
 
+### `booleanOp(a, b, operation, options?)`
+
+The operation applied to the fills of paths `a` and `b`, as new path commands:
+
+- `'union'`: inside either
+- `'intersection'`: inside both
+- `'difference'`: inside `a` and not inside `b`
+- `'exclusion'`: inside exactly one
+
+The result is made of simple, closed contours: none crosses another or itself,
+and each ends with `close` exactly where it starts. Contours may touch at
+single points. Outer contours run clockwise on screen (positive `area`) and
+holes the other way, so the result fills the same under either fill rule.
+Curves are only split, never approximated: every segment of the result is a
+piece of an input segment, of the same kind.
+
+Every subpath counts as closed. `options.fillRuleA` and `options.fillRuleB`
+(`'nonzero'` by default, or `'evenodd'`) decide how each path's subpaths form
+its fill, so a path's own overlaps are resolved too:
+
+```ts
+booleanOp(glyph, [], 'union'); // the glyph without overlapping contours
+```
+
+The fill rule applies to the whole path, so under `'evenodd'` a contour drawn
+twice covers its area twice, which is even: it isn't filled, and it disappears
+from the result.
+
+`options.tolerance` (default `1e-10`) is relative: points closer than it times
+the size of both paths together count as the same point, so results don't
+depend on the coordinates' scale. Each contour starts wherever the walk around
+it began: the same for the same input, but not tied to the input's start
+points.
+
+Throws `BooleanOpError` when it can't give a trustworthy result: when two
+curves stay within the tolerance of each other along a stretch without being
+the same curve, or when a contour of the result doesn't close. Neither has come
+up in testing.
+
+Time grows with the number of pieces the edges are cut into: a glyph takes
+about 0.25 ms, a union of 400 overlapping circles about 0.3 s. Paths whose
+edges cross each other thousands of times are slow (a random polygon of 1,000
+edges takes seconds).
+
 ### `toQuadratics(path, tolerance?, options?)`
 
 The path with every cubic replaced by quadratics within `tolerance`. Lines and
@@ -364,6 +408,9 @@ const path = [
   (2004).
 - **Containment**: [Skia](https://skia.org) (BSD-3-Clause) and
   [fontTools](https://github.com/fonttools/fonttools) (MIT).
+- **Boolean operations**: stroke-outline's curve intersection and the
+  resolution of its stroke outlines, with overlapping and touching curves, a
+  cubic's own loop, and operations between two fills added here.
 - **Lengths**: stroke-outline's arc length, based on
   [bezierjs](https://github.com/Pomax/bezierjs) (MIT), with error control and
   points at a distance added here.
