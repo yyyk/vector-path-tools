@@ -6,7 +6,7 @@
 		<title>vector-path-tools</title>
 		<meta
 			name="description"
-			content="Geometry for vector paths: exact bounds, hit testing, lengths and points along paths, splitting and offsetting curves, flattening within a tolerance, cubic-to-quadratic conversion and SVG arcs. Pure TypeScript."
+			content="Geometry for vector paths: exact bounds, hit testing, boolean operations, lengths and points along paths, splitting and offsetting curves, flattening within a tolerance, cubic-to-quadratic conversion and SVG arcs. Pure TypeScript."
 		/>
 		<script type="module" src="/src/overview.ts"></script>
 	</head>
@@ -15,9 +15,10 @@
 			<h1>vector-path-tools</h1>
 			<p class="lead">
 				Geometry for vector paths made of lines and quadratic and cubic Bézier curves:
-				exact bounding boxes, hit testing, lengths and points along paths, splitting and
-				offsetting curves, flattening curves into lines within a tolerance, converting
-				cubics to quadratics, and SVG arcs as cubics. Pure TypeScript, no dependencies.
+				exact bounding boxes, hit testing, boolean operations, lengths and points along
+				paths, splitting and offsetting curves, flattening curves into lines within a
+				tolerance, converting cubics to quadratics, and SVG arcs as cubics. Pure
+				TypeScript, no dependencies.
 			</p>
 			<pre><code class="language-sh">npm install vector-path-tools</code></pre>
 			<pre><code class="language-ts">import { arcTo, bounds, contains, flatten, toQuadratics } from 'vector-path-tools';
@@ -304,6 +305,40 @@ subpaths(path).map(area); // each subpath's: > 0 clockwise on screen</code></pre
 				</form>
 				<canvas id="contains"></canvas>
 				<p class="caption" id="contains-info"></p>
+			</div>
+
+			<h2><code>booleanOp(a, b, operation, options?)</code></h2>
+			<p>
+				Union, intersection, difference or exclusion of two paths' fills, as simple,
+				closed contours: outer ones clockwise on screen, holes the other way, so the
+				result fills the same under either fill rule. Curves are only split where edges
+				meet, never approximated. Each path has its own fill rule, so a path's own
+				overlaps are resolved too.
+			</p>
+			<pre><code class="language-ts">booleanOp(a, b, 'difference'); // inside a and not inside b
+booleanOp(a, b, 'union', { fillRuleA: 'evenodd' });
+booleanOp(glyph, [], 'union'); // a glyph without overlapping contours</code></pre>
+			<div class="demo">
+				<form class="controls" id="boolean-form">
+					<label
+						>operation
+						<select name="operation">
+							<option>union</option>
+							<option>intersection</option>
+							<option>difference</option>
+							<option>exclusion</option>
+						</select></label
+					>
+					<label
+						>fillRuleB
+						<select name="ruleB">
+							<option>nonzero</option>
+							<option>evenodd</option>
+						</select></label
+					>
+				</form>
+				<canvas id="boolean"></canvas>
+				<p class="caption" id="boolean-info"></p>
 			</div>
 
 			<h2><code>toQuadratics(path, tolerance?, options?)</code></h2>

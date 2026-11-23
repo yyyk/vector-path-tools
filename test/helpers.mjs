@@ -1,5 +1,8 @@
-// Shared test helpers: a seeded random generator, curve evaluation and the
-// distance from a point to a polyline, for checking results by sampling.
+// Shared test helpers: a seeded random generator, curve evaluation, the
+// distance from a point to a polyline, and fills, for checking results by
+// sampling.
+
+import { contains } from '../dist/index.js';
 
 /** Deterministic pseudo-random numbers in [min, max). */
 export function random(seed = 1) {
@@ -116,4 +119,15 @@ export function controls(path) {
 				[m.x, c.c1x, c.c2x, c.x],
 				[m.y, c.c1y, c.c2y, c.y],
 			];
+}
+
+/**
+ * Whether (x, y) is inside the path's fill, or null where `contains`' two
+ * methods disagree. The default, Skia's, counts points within 1/4096 of a
+ * curve (in path units) as on it, so at small scales it answers for points
+ * well away from the edge; checks that sample a fill skip those points.
+ */
+export function fillAt(path, x, y, fillRule = 'nonzero') {
+	const skia = contains(path, x, y, { fillRule });
+	return skia === contains(path, x, y, { fillRule, method: 'fonttools' }) ? skia : null;
 }

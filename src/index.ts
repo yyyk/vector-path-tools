@@ -18,6 +18,8 @@ export {
 } from './measure.js';
 export { offsetCurve, type OffsetOptions } from './offset.js';
 export { bounds, type Bounds } from './bounds.js';
+export { booleanOp, type BooleanOperation, type BooleanOpOptions } from './boolean-op.js';
+export { BooleanOpError } from './boolean-op-error.js';
 export {
 	contains,
 	type ContainsMethod,

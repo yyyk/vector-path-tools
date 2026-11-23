@@ -1,5 +1,6 @@
 import {
 	area,
+	booleanOp,
 	bounds,
 	contains,
 	curvePoint,
@@ -13,6 +14,7 @@ import {
 	splitPath,
 	subpaths,
 	toQuadratics,
+	type BooleanOperation,
 	type ContainsMethod,
 	type FillRule,
 	type FlattenMethod,
@@ -30,6 +32,7 @@ import {
 	PathEditor,
 	strokePath,
 	toleranceLabel,
+	trace,
 	vertices,
 	view,
 } from './common';
@@ -246,6 +249,72 @@ bind(containsForm, () => {
 	lastInner = inner;
 	containsEditor.set(glyph(inner));
 });
+
+// ---------- booleanOp ----------
+const booleanForm = $<HTMLFormElement>('boolean-form');
+
+/** The path scaled by `s` about (300, 200), then moved by (dx, dy). */
+function moved(path: PathCommand[], dx: number, dy: number, s = 1): PathCommand[] {
+	const x = (v: number) => 300 + (v - 300) * s + dx;
+	const y = (v: number) => 200 + (v - 200) * s + dy;
+	return path.map(c =>
+		c.type === 'close'
+			? c
+			: c.type === 'quadTo'
+				? { ...c, cx: x(c.cx), cy: y(c.cy), x: x(c.x), y: y(c.y) }
+				: c.type === 'cubicTo'
+					? {
+							...c,
+							c1x: x(c.c1x),
+							c1y: y(c.c1y),
+							c2x: x(c.c2x),
+							c2y: y(c.c2y),
+							x: x(c.x),
+							y: y(c.y),
+						}
+					: { ...c, x: x(c.x), y: y(c.y) },
+	);
+}
+
+// A: the drop (cubics). B: the glyph-like ring (quadratics), its hole wound
+// the same way as its outside, so that B's fill rule decides whether it's a
+// hole. Both are edited in one editor; A is the first commands.
+const booleanA = moved(PRESETS.drop, -90, 0);
+const booleanB = moved(glyph('same'), 50, 0, 0.75);
+const booleanEditor = new PathEditor(
+	view($('boolean'), W, H),
+	[...booleanA, ...booleanB],
+	e => {
+		const operation = value(booleanForm, 'operation') as BooleanOperation;
+		const fillRuleB = value(booleanForm, 'ruleB') as FillRule;
+		const a = e.commands.slice(0, booleanA.length);
+		const b = e.commands.slice(booleanA.length);
+		const start = performance.now();
+		const result = booleanOp(a, b, operation, { fillRuleB });
+		const ms = performance.now() - start;
+		const { ctx } = e.v;
+		ctx.save();
+		ctx.fillStyle = css('--accent');
+		ctx.globalAlpha = 0.3;
+		trace(ctx, result);
+		ctx.fill();
+		ctx.restore();
+		strokePath(e.v, a, css('--fg'), 1, [4, 4]);
+		strokePath(e.v, b, css('--fg'), 1, [4, 4]);
+		strokePath(e.v, result, css('--accent'), 2);
+		vertices(e.v, result, css('--fg'));
+		e.drawHandles();
+		const contours = subpaths(result).length;
+		const drawn = result.filter(c => c.type !== 'moveTo' && c.type !== 'close').length;
+		const optionsCode = fillRuleB === 'nonzero' ? '' : `, { fillRuleB: '${fillRuleB}' }`;
+		$('boolean-info').textContent =
+			`booleanOp(a, b, '${operation}'${optionsCode}): ${contours} contour${contours === 1 ? '' : 's'}, ` +
+			`area ${area(result).toFixed(0)}, in ${ms.toFixed(2)} ms. A is the drop, B the ring (dashed). ` +
+			`The result's ${drawn} segments are each a piece of an input segment, of the same kind; ` +
+			`the squares mark where they end.`;
+	},
+);
+bind(booleanForm, () => booleanEditor.redraw());
 
 // ---------- flatten ----------
 const flattenForm = $<HTMLFormElement>('flatten-form');

@@ -1,9 +1,9 @@
 #!/bin/sh
-# Generates stroke-outline.json: stroke-outline's arc lengths, dash tables and
-# curve offsets (see stroke-outline-gen/main.cpp), the reference the ports in
-# src/stroke-outline/ must match bit for bit. Expects stroke-outline at commit
-# 084fd2ca8eb0065951b240a917df5d8d2e616bfd (its arc length code is the same as
-# at 16aa4a004971b38280c3dfd9b256724fcb85969e, which
+# Generates stroke-outline.json: stroke-outline's arc lengths, dash tables,
+# curve offsets and intersections (see stroke-outline-gen/main.cpp), the
+# reference the ports in src/stroke-outline/ must match bit for bit. Expects
+# stroke-outline at commit 084fd2ca8eb0065951b240a917df5d8d2e616bfd (its arc
+# length code is the same as at 16aa4a004971b38280c3dfd9b256724fcb85969e, which
 # src/stroke-outline/arc-length.ts cites). Compiled with -ffp-contract=off, so
 # that no multiply and add are fused, as in JavaScript. Without a path, clones
 # stroke-outline at that commit into test/fixtures/.cache/stroke-outline.

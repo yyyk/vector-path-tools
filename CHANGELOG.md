@@ -5,6 +5,18 @@ All notable changes to this project are documented here. The format follows
 [Semantic Versioning](https://semver.org/) (while the version is 0.x, minor
 versions may change the API).
 
+## [Unreleased]
+
+### Added
+
+- `booleanOp(a, b, operation, options?)`: union, intersection, difference or
+  exclusion of two paths' fills, as simple, closed contours, outer ones
+  clockwise on screen and holes the other way. Curves are only split, never
+  approximated. Each path has its own fill rule. `booleanOp(path, [], 'union')`
+  removes a path's own overlaps.
+- `BooleanOpError`, thrown by `booleanOp` when it can't give a trustworthy
+  result.
+
 ## [0.1.2] - 2026-11-18
 
 ### Added
